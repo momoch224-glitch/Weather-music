@@ -1,0 +1,3 @@
+# .gitignore の中身に追記
+weather-tool/apikey.txt
+weather-tool/*.class
