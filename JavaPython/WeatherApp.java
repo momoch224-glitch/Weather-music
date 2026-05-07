@@ -11,7 +11,7 @@ public class WeatherApp {
         String city = scanner.nextLine();
 
         try {
-            // Pythonスクリプトを呼び出すコマンドを構築
+            // Pythonスクリプトを呼び出すコマンドを構築する
             // "python" の部分は環境に合わせて "python3" などに変える必要があるかもしれない
            ProcessBuilder pb = new ProcessBuilder("python", "JavaPython/weather.py", city);
             Process process = pb.start();

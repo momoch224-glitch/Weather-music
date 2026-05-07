@@ -15,7 +15,7 @@ def load_api_key():
     
     try:
         with open(key_path, "r", encoding="utf-8") as f:
-            # 中身を読み込んで、前後の余計な空白や改行を削除
+            # 中身を読み込んで、前後の余計な空白や改行を削除する
             return f.read().strip()
     except FileNotFoundError:
         return None
