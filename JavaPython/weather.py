@@ -4,7 +4,8 @@ import requests
 import json
 import datetime
 import os
-
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 def load_api_key():
    
     # このファイル (weather.py) があるディレクトリのパスを取得
