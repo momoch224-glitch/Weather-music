@@ -1,43 +1,45 @@
 body {
-  background-color: #111;
-
-  color: white;
-
-  font-family: sans-serif;
-
-  display: flex;
-
-  justify-content: center;
-
-  align-items: center;
-
-  height: 100vh;
-
   margin: 0;
+  font-family: sans-serif;
+  background-color: #f4f4f9;
+  color: #333;
 }
 
 .container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
   text-align: center;
 }
 
+/* 地図のスタイル */
+#map {
+  height: 400px;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* 天気カードのスタイル */
 .weather-card {
-  background-color: #222;
-
-  padding: 30px;
-
-  border-radius: 20px;
-
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   margin-bottom: 20px;
 }
 
+.weather-card h2 { margin-top: 0; }
+
 button {
   padding: 10px 20px;
-
-  border: none;
-
-  border-radius: 10px;
-
   font-size: 16px;
-
   cursor: pointer;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
 }
+
+button:hover { background: #45a049; }
