@@ -1,0 +1,14 @@
+{
+  "bpm": 90,
+  "key": "C",
+  "patterns": [
+    {
+      "name": "A",
+      "chords": ["C", "G", "Am", "Em"]
+    },
+    {
+      "name": "B",
+      "chords": ["F", "G", "Em", "Am"]
+    }
+  ]
+}

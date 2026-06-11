@@ -2,3 +2,10 @@ JavaPython/apikey.txt
 JavaPython/*.class
 JavaPython/apikey.txt
 weather_music_ui/config.js
+# 仮想環境を丸ごと除外
+venv38/
+.venv/
+
+# チェックポイントデータなどを除外
+*.ckpt*
+*.data-*
