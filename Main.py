@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import glob
+import random
 
 import note_seq
 from note_seq.protobuf import music_pb2
@@ -10,7 +11,7 @@ from note_seq import midi_io
 print("最新版Main.py起動")
 
 
-def create_melody_midi(pattern, bpm):
+def create_melody_midi(pattern, bpm, rhythm_style):
 
     seq = music_pb2.NoteSequence()
 
@@ -26,7 +27,7 @@ def create_melody_midi(pattern, bpm):
         "Am": [69, 72]
     }
 
-    note_index = 0
+    current_time = 0.0
 
     for chord in pattern["chords"]:
 
@@ -38,17 +39,34 @@ def create_melody_midi(pattern, bpm):
 
             note.pitch = pitch
 
-            start = note_index * 0.5
-            end = start + 0.45
+            if rhythm_style == "high":
 
-            note.start_time = start
-            note.end_time = end
+                duration = random.choice([
+                    0.25,
+                    0.25,
+                    0.50,
+                    0.50,
+                    0.75
+                ])
+
+            else:
+
+                duration = random.choice([
+                    0.50,
+                    1.00,
+                    1.00,
+                    1.50,
+                    2.00
+                ])
+
+            note.start_time = current_time
+            note.end_time = current_time + duration
 
             note.velocity = 90
 
-            note_index += 1
+            current_time += duration
 
-    seq.total_time = note_index * 0.5
+    seq.total_time = current_time
 
     filename = f"{pattern['name']}.mid"
 
@@ -72,11 +90,22 @@ def generate_midis():
 
     bpm = data["bpm"]
 
+    rhythm_style = data.get(
+        "rhythm_style",
+        "high"
+    )
+
+    print(
+        "rhythm_style =",
+        rhythm_style
+    )
+
     for pattern in data["patterns"]:
 
         create_melody_midi(
             pattern,
-            bpm
+            bpm,
+            rhythm_style
         )
 
 

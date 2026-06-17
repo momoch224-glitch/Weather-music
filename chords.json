@@ -1,6 +1,7 @@
 {
   "bpm": 90,
   "key": "C",
+  "rhythm_style": "high",
   "patterns": [
     {
       "name": "A",
