@@ -10,14 +10,19 @@ public class Main2 {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Select rhythm style:");
-        System.out.println("high = many notes");
-        System.out.println("low  = few notes");
+        System.out.println("low");
+        System.out.println("medium");
+        System.out.println("high");
         System.out.print("> ");
 
-        String rhythmStyle = scanner.nextLine().trim().toLowerCase();
+        String rhythmStyle =
+                scanner.nextLine()
+                        .trim()
+                        .toLowerCase();
 
-        if (!rhythmStyle.equals("high") &&
-            !rhythmStyle.equals("low")) {
+        if (!rhythmStyle.equals("low")
+                && !rhythmStyle.equals("medium")
+                && !rhythmStyle.equals("high")) {
 
             System.out.println("Invalid input");
             return;
@@ -29,14 +34,32 @@ public class Main2 {
                 "  \"key\": \"C\",\n" +
                 "  \"rhythm_style\": \"" + rhythmStyle + "\",\n" +
                 "  \"patterns\": [\n" +
+
                 "    {\n" +
                 "      \"name\": \"A\",\n" +
                 "      \"chords\": [\"C\", \"G\", \"Am\", \"Em\"]\n" +
                 "    },\n" +
+
                 "    {\n" +
                 "      \"name\": \"B\",\n" +
                 "      \"chords\": [\"F\", \"G\", \"Em\", \"Am\"]\n" +
+                "    },\n" +
+
+                "    {\n" +
+                "      \"name\": \"C\",\n" +
+                "      \"chords\": [\"F\", \"C\", \"Dm\", \"Am\"]\n" +
+                "    },\n" +
+
+                "    {\n" +
+                "      \"name\": \"D\",\n" +
+                "      \"chords\": [\"C\", \"G\", \"Am\", \"F\"]\n" +
+                "    },\n" +
+
+                "    {\n" +
+                "      \"name\": \"E\",\n" +
+                "      \"chords\": [\"F\", \"G\", \"Em\", \"Am\"]\n" +
                 "    }\n" +
+
                 "  ]\n" +
                 "}";
 
@@ -54,10 +77,11 @@ public class Main2 {
 
         try {
 
-            ProcessBuilder pb = new ProcessBuilder(
-                    "python",
-                    "Main.py"
-            );
+            ProcessBuilder pb =
+                    new ProcessBuilder(
+                            "python",
+                            "Main.py"
+                    );
 
             pb.inheritIO();
 
@@ -75,7 +99,8 @@ public class Main2 {
             return;
         }
 
-        File finalMidi = new File("final.mid");
+        File finalMidi =
+                new File("final.mid");
 
         if (finalMidi.exists()) {
 

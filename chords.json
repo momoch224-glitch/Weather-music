@@ -1,7 +1,7 @@
 {
   "bpm": 90,
   "key": "C",
-  "rhythm_style": "high",
+  "rhythm_style": "medium",
   "patterns": [
     {
       "name": "A",
@@ -9,6 +9,18 @@
     },
     {
       "name": "B",
+      "chords": ["F", "G", "Em", "Am"]
+    },
+    {
+      "name": "C",
+      "chords": ["F", "C", "Dm", "Am"]
+    },
+    {
+      "name": "D",
+      "chords": ["C", "G", "Am", "F"]
+    },
+    {
+      "name": "E",
       "chords": ["F", "G", "Em", "Am"]
     }
   ]

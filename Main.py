@@ -1,8 +1,8 @@
 import json
+import glob
+import shutil
 import subprocess
 import sys
-import glob
-import random
 
 import note_seq
 from note_seq.protobuf import music_pb2
@@ -11,7 +11,10 @@ from note_seq import midi_io
 print("最新版Main.py起動")
 
 
-def create_melody_midi(pattern, bpm, rhythm_style):
+CHECKPOINT = "C:/AI/models/cat-mel_2bar_big.ckpt"
+
+
+def create_melody_midi(pattern, bpm):
 
     seq = music_pb2.NoteSequence()
 
@@ -27,7 +30,7 @@ def create_melody_midi(pattern, bpm, rhythm_style):
         "Am": [69, 72]
     }
 
-    current_time = 0.0
+    note_index = 0
 
     for chord in pattern["chords"]:
 
@@ -39,36 +42,19 @@ def create_melody_midi(pattern, bpm, rhythm_style):
 
             note.pitch = pitch
 
-            if rhythm_style == "high":
+            start = note_index * 0.5
+            end = start + 0.45
 
-                duration = random.choice([
-                    0.25,
-                    0.25,
-                    0.50,
-                    0.50,
-                    0.75
-                ])
-
-            else:
-
-                duration = random.choice([
-                    0.50,
-                    1.00,
-                    1.00,
-                    1.50,
-                    2.00
-                ])
-
-            note.start_time = current_time
-            note.end_time = current_time + duration
+            note.start_time = start
+            note.end_time = end
 
             note.velocity = 90
 
-            current_time += duration
+            note_index += 1
 
-    seq.total_time = current_time
+    seq.total_time = note_index * 0.5
 
-    filename = f"{pattern['name']}.mid"
+    filename = pattern["name"] + ".mid"
 
     note_seq.sequence_proto_to_midi_file(
         seq,
@@ -90,89 +76,152 @@ def generate_midis():
 
     bpm = data["bpm"]
 
-    rhythm_style = data.get(
-        "rhythm_style",
-        "high"
-    )
-
-    print(
-        "rhythm_style =",
-        rhythm_style
-    )
-
     for pattern in data["patterns"]:
 
         create_melody_midi(
             pattern,
-            bpm,
-            rhythm_style
+            bpm
         )
 
 
-def run_musicvae():
+def interpolate(midi1, midi2, outdir):
 
-    print("MusicVAE開始")
+    print(
+        "補間開始:",
+        midi1,
+        "→",
+        midi2
+    )
+
+    shutil.rmtree(
+        outdir,
+        ignore_errors=True
+    )
 
     cmd = [
         sys.executable,
         "-m",
         "magenta.models.music_vae.music_vae_generate",
         "--config=cat-mel_2bar_big",
-        "--checkpoint_file=C:/AI/models/cat-mel_2bar_big.ckpt",
+        "--checkpoint_file=" + CHECKPOINT,
         "--mode=interpolate",
-        "--input_midi_1=A.mid",
-        "--input_midi_2=B.mid",
+        "--input_midi_1=" + midi1,
+        "--input_midi_2=" + midi2,
         "--num_outputs=5",
-        "--output_dir=interpolate_test"
+        "--output_dir=" + outdir
     ]
 
     result = subprocess.run(cmd)
 
-    print("return code =", result.returncode)
-
-    print("MusicVAE終了")
-
-
-def merge_midis():
-
-    print("MIDI連結開始")
-
-    midi_files = sorted(
-        glob.glob("interpolate_test/*.mid")
+    print(
+        "return code =",
+        result.returncode
     )
 
-    print("検出数 =", len(midi_files))
+    if result.returncode != 0:
+        raise RuntimeError(
+            "MusicVAE失敗"
+        )
+
+
+def append_sequence(
+    merged,
+    seq,
+    current_time
+):
+
+    for note in seq.notes:
+
+        new_note = merged.notes.add()
+
+        new_note.pitch = note.pitch
+        new_note.velocity = note.velocity
+
+        new_note.start_time = (
+            note.start_time +
+            current_time
+        )
+
+        new_note.end_time = (
+            note.end_time +
+            current_time
+        )
+
+    return current_time + seq.total_time
+
+
+def merge_all():
+
+    print("連結開始")
 
     merged = music_pb2.NoteSequence()
 
+    merged.tempos.add(qpm=90)
+
     current_time = 0.0
 
-    for midi_file in midi_files:
+    structure = [
 
-        seq = midi_io.midi_file_to_note_sequence(
-            midi_file
-        )
+        ("A.mid", None),
 
-        for note in seq.notes:
+        ("ab_interp", True),
+        ("B.mid", None),
 
-            new_note = merged.notes.add()
+        ("bc_interp", True),
+        ("C.mid", None),
 
-            new_note.pitch = note.pitch
-            new_note.velocity = note.velocity
+        ("cd_interp", True),
+        ("D.mid", None),
 
-            new_note.start_time = (
-                note.start_time + current_time
+        ("de_interp", True),
+        ("E.mid", None)
+    ]
+
+    for item, is_folder in structure:
+
+        if is_folder:
+
+            mids = sorted(
+                glob.glob(
+                    item + "/*of-005.mid"
+                )
             )
 
-            new_note.end_time = (
-                note.end_time + current_time
+            for midi_file in mids:
+
+                seq = (
+                    midi_io
+                    .midi_file_to_note_sequence(
+                        midi_file
+                    )
+                )
+
+                current_time = (
+                    append_sequence(
+                        merged,
+                        seq,
+                        current_time
+                    )
+                )
+
+        else:
+
+            seq = (
+                midi_io
+                .midi_file_to_note_sequence(
+                    item
+                )
             )
 
-        current_time += seq.total_time
+            current_time = (
+                append_sequence(
+                    merged,
+                    seq,
+                    current_time
+                )
+            )
 
     merged.total_time = current_time
-
-    merged.tempos.add(qpm=90)
 
     note_seq.sequence_proto_to_midi_file(
         merged,
@@ -188,8 +237,30 @@ if __name__ == "__main__":
 
     generate_midis()
 
-    run_musicvae()
+    interpolate(
+        "A.mid",
+        "B.mid",
+        "ab_interp"
+    )
 
-    merge_midis()
+    interpolate(
+        "B.mid",
+        "C.mid",
+        "bc_interp"
+    )
+
+    interpolate(
+        "C.mid",
+        "D.mid",
+        "cd_interp"
+    )
+
+    interpolate(
+        "D.mid",
+        "E.mid",
+        "de_interp"
+    )
+
+    merge_all()
 
     print("全処理完了")
