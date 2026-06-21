@@ -1,174 +1,486 @@
-import javax.sound.midi.*;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Scanner;
-import java.util.Random;
-import java.util.Arrays;
+import java.io.*;
+import java.util.*;
 
 public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        
-        // 1. 入力セクション
-        System.out.print("都道府県名を英語で入力してください (例: Tokyo, Osaka): ");
-        String city = scanner.nextLine();
-        System.out.print("展開パラメータ i を入力 (-10 ～ 10): ");
-        int i = scanner.nextInt();
 
-        // 2. Pythonから天気データを取得
-        String jsonResult = "";
+    public static void main(String[] args) {
+
         try {
-            // Pythonスクリプトを呼び出し
-            ProcessBuilder pb = new ProcessBuilder("python", "JavaPython/weather.py", city);
+
+            System.setOut(new PrintStream(System.out, true, "UTF-8"));
+            System.setErr(new PrintStream(System.err, true, "UTF-8"));
+
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.print("都市名を入力してください: ");
+            String city = scanner.nextLine();
+
+            System.out.print("i (-10～10) を入力してください: ");
+            int i = scanner.nextInt();
+
+            ProcessBuilder pb = new ProcessBuilder(
+                    "python",
+                    "-Xutf8",
+                    "JavaPython/weather.py",
+                    city
+            );
+
+            pb.redirectErrorStream(true);
+
             Process process = pb.start();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"));
-            jsonResult = reader.readLine(); 
-            
-            // デバッグ用：Pythonからの生の出力を表示
-            System.out.println("\nDEBUG: Pythonからの生データ -> " + jsonResult);
-            
+            BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(
+                                    process.getInputStream(),
+                                    "UTF-8"
+                            )
+                    );
+
+            String json = reader.readLine();
+            json = json.replace(": ", ":");
+            System.out.println(
+                "DEBUG JSON = " + json
+            );
+
             process.waitFor();
-        } catch (Exception e) {
-            System.err.println("Pythonの呼び出しに失敗しました。パスやapikey.txtを確認してください。");
+
+            if (json == null) {
+
+                System.out.println(
+                        "weather.py から結果を取得できません"
+                );
+
+                return;
+            }
+
+            String season =
+                    clean(extract(json, "season"));
+
+            String condition =
+                    clean(extract(json, "condition"));
+
+            String weather;
+
+            switch (condition) {
+
+                case "Clear":
+                    weather = "晴れ";
+                    break;
+
+                case "Clouds":
+                    weather = "曇り";
+                    break;
+
+                case "Rain":
+                    weather = "雨";
+                    break;
+
+                default:
+                    weather = "不明";
+            }
+
+            int baseNote =
+                    switch (season) {
+
+                        case "春" -> 60;
+                        case "夏" -> 67;
+                        case "秋" -> 64;
+                        case "冬" -> 62;
+
+                        default -> 60;
+                    };
+
+            String type =
+                    weather.equals("晴れ")
+                            ? "dur"
+                            : "moll";
+
+            int root =
+                    weather.equals("晴れ")
+                            ? baseNote
+                            : baseNote + 9;
+
+            int finalNote =
+                    (root + i + 120) % 12;
+
+            String[] noteNames = {
+                    "C",
+                    "C#",
+                    "D",
+                    "D#",
+                    "E",
+                    "F",
+                    "F#",
+                    "G",
+                    "G#",
+                    "A",
+                    "A#",
+                    "B"
+            };
+
+            String key1 =
+                    noteNames[root % 12];
+
+            String key2 =
+                    noteNames[finalNote];
+
+            System.out.println(
+                    "季節 = " + season
+            );
+
+            System.out.println(
+                    "天気 = " + weather
+            );
+
+            System.out.println(
+                    "生成キー① = "
+                            + key1
+                            + " "
+                            + type
+            );
+
+            System.out.println(
+                    "生成キー② = "
+                            + key2
+                            + " "
+                            + type
+            );
+
+            String[] patternA;
+
+            switch (season) {
+
+                case "春":
+
+                    patternA = new String[]{
+                            "I",
+                            "V",
+                            "VIm",
+                            "IIIm"
+                    };
+
+                    break;
+
+                case "夏":
+
+                    patternA = new String[]{
+                            "I",
+                            "V",
+                            "VIm",
+                            "IV"
+                    };
+
+                    break;
+
+                case "秋":
+
+                    patternA = new String[]{
+                            "IV",
+                            "III",
+                            "VI",
+                            "V"
+                    };
+
+                    break;
+
+                default:
+
+                    patternA = new String[]{
+                            "VIm",
+                            "IV",
+                            "V",
+                            "I"
+                    };
+            }
+
+            String[] patternB;
+
+            switch (weather) {
+
+                case "晴れ":
+
+                    patternB = new String[]{
+                            "IV",
+                            "V",
+                            "IIIm",
+                            "VIm"
+                    };
+
+                    break;
+
+                case "曇り":
+
+                    patternB = new String[]{
+                            "I",
+                            "IV",
+                            "V",
+                            "V"
+                    };
+
+                    break;
+
+                default:
+
+                    patternB = new String[]{
+                            "IV",
+                            "I",
+                            "IIm",
+                            "VIm"
+                    };
+            }
+
+            String[] chordsA =
+                    convertRomanToKey(
+                            key1,
+                            patternA
+                    );
+
+            String[] chordsB =
+                    convertRomanToKey(
+                            key1,
+                            patternB
+                    );
+
+            writeJson(
+                    key1,
+                    chordsA,
+                    chordsB
+            );
+
+            System.out.println(
+                    "chords.json 作成完了"
+            );
+
+            ProcessBuilder python =
+                    new ProcessBuilder(
+                            "venv38\\Scripts\\python.exe",
+                        "Main.py"
+                    );
+
+            python.inheritIO();
+
+            Process p =
+                    python.start();
+
+            p.waitFor();
+
+            System.out.println(
+                    "Main.py 実行完了"
+            );
+
+        }
+
+        catch (Exception e) {
+
             e.printStackTrace();
-            return;
-        }
-
-        if (jsonResult == null || jsonResult.isEmpty()) {
-            System.err.println("エラー：Pythonからデータを受け取れませんでした。");
-            return;
-        }
-
-        // 3. JSON文字列からデータを抽出（強化版パース）
-        String season = extractJsonValue(jsonResult, "season");
-        String condition = extractJsonValue(jsonResult, "condition");
-        
-        // Pythonの天気を音楽用の「晴れ・雨・曇り」に変換
-        String weather = switch (condition) {
-            case "Clear" -> "晴れ";
-            case "Rain", "Drizzle", "Thunderstorm" -> "雨";
-            default -> "曇り"; 
-        };
-
-        System.out.println("--- 取得データ ---");
-        System.out.println("季節: " + season + " / 天気: " + weather + " (" + condition + ")");
-        System.out.println("------------------\n");
-
-        // 4. 音楽生成の準備
-        int n = switch (season) {
-            case "春" -> 60; // C4
-            case "夏" -> 67; // G4
-            case "秋" -> 62; // D4
-            case "冬" -> 57; // A3
-            default -> 60;   // 取得失敗時はC4
-        };
-
-        Random random = new Random();
-        int r = random.nextInt(12);
-        int n_root = (r * 7) + n;
-        while (n_root >= 69) { n_root -= 12; }
-
-        int beat = (int)((60.0 / 72.0) * 1000); // ♩=72
-
-        try {
-            Synthesizer synth = MidiSystem.getSynthesizer();
-            synth.open();
-            MidiChannel channel = synth.getChannels()[0];
-            channel.controlChange(7, 127); // 音量最大
-
-            if (weather.equals("曇り")) {
-                playCadence(channel, n_root, "dur", beat, i);
-                Thread.sleep(beat); // durとmollの間の休符
-                playCadence(channel, n_root + 9, "moll", beat, i);
-            } else {
-                String type = weather.equals("晴れ") ? "dur" : "moll";
-                // 雨（moll）の場合は平行短調にする
-                int rootFinal = weather.equals("晴れ") ? n_root : n_root + 9;
-                playCadence(channel, rootFinal, type, beat, i);
-            }
-
-            // 最後の和音の余韻を待ってから終了
-            Thread.sleep(1500); 
-            synth.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        scanner.close();
-    }
-
-    /**
-     * JSON文字列から特定のキーの値を取り出す強化版メソッド
-     */
-    private static String extractJsonValue(String json, String key) {
-        try {
-            String searchKey = "\"" + key + "\"";
-            int keyIndex = json.indexOf(searchKey);
-            if (keyIndex == -1) return "データなし";
-
-            int colonIndex = json.indexOf(":", keyIndex + searchKey.length());
-            int startQuote = json.indexOf("\"", colonIndex);
-            int endQuote = json.indexOf("\"", startQuote + 1);
-
-            return json.substring(startQuote + 1, endQuote);
-        } catch (Exception e) {
-            return "解析エラー";
         }
     }
 
-    /**
-     * 和音進行（I-IV-V-I）を演奏するメソッド
-     */
-    private static void playCadence(MidiChannel channel, int root, String type, int duration, int i) throws InterruptedException {
-        String[] noteNames = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        boolean isDur = type.equals("dur");
-        
-        int third = isDur ? 4 : 3;
-        int sixth = isDur ? 9 : 8; // mollのときは短6度(8)にする
+    static String[] convertRomanToKey(
+            String key,
+            String[] roman
+    ) {
 
-        System.out.println("【演奏開始: " + noteNames[root % 12] + type + " (i=" + i + ")】");
+        Map<String, String[]> map =
+                new HashMap<>();
 
-        int[][] baseChords = {
-            {root, root + third, root + 7},    // I
-            {root, root + 5, root + sixth},    // IV (第2展開形のベース)
-            {root - 1, root + 2, root + 7},    // V  (第1展開形のベース)
-            {root, root + third, root + 7}     // I
-        };
+        map.put(
+                "C",
+                new String[]{
+                        "C",
+                        "Dm",
+                        "Em",
+                        "F",
+                        "G",
+                        "Am",
+                        "Bdim"
+                }
+        );
 
-        for (int[] chord : baseChords) {
-            // 前の音を止める（重なり防止）
-            channel.allNotesOff();
-            
-            // パラメータ i に基づいて転回形を計算
-            int[] inverted = applyInversion(chord, i);
-            
-            // 演奏
-            for (int note : inverted) channel.noteOn(note, 90);
-            
-            // ♩=72の長さ分待機
-            Thread.sleep(duration);
-        }
-        // 最後に音を止める
-        channel.allNotesOff();
-    }
+        map.put(
+                "G",
+                new String[]{
+                        "G",
+                        "Am",
+                        "Bm",
+                        "C",
+                        "D",
+                        "Em",
+                        "F#dim"
+                }
+        );
 
-    /**
-     * 転回ロジック: i 回数分、一番低い音を上げる（または高い音を下げる）
-     */
-    private static int[] applyInversion(int[] chord, int i) {
-        int[] result = chord.clone();
-        if (i > 0) {
-            for (int step = 0; step < i; step++) {
-                Arrays.sort(result);
-                result[0] += 12;
+        map.put(
+                "D",
+                new String[]{
+                        "D",
+                        "Em",
+                        "F#m",
+                        "G",
+                        "A",
+                        "Bm",
+                        "C#dim"
+                }
+        );
+
+        map.put(
+                "A",
+                new String[]{
+                        "A",
+                        "Bm",
+                        "C#m",
+                        "D",
+                        "E",
+                        "F#m",
+                        "G#dim"
+                }
+        );
+
+        map.put(
+                "F",
+                new String[]{
+                        "F",
+                        "Gm",
+                        "Am",
+                        "A#",
+                        "C",
+                        "Dm",
+                        "Edim"
+                }
+        );
+
+        String[] scale =
+                map.getOrDefault(
+                        key,
+                        map.get("C")
+                );
+
+        String[] result =
+                new String[roman.length];
+
+        for (int i = 0; i < roman.length; i++) {
+
+            switch (roman[i]) {
+
+                case "I":
+                    result[i] = scale[0];
+                    break;
+
+                case "IIm":
+                    result[i] = scale[1];
+                    break;
+
+                case "IIIm":
+                    result[i] = scale[2];
+                    break;
+
+                case "IV":
+                    result[i] = scale[3];
+                    break;
+
+                case "V":
+                    result[i] = scale[4];
+                    break;
+
+                case "VIm":
+                    result[i] = scale[5];
+                    break;
+
+                default:
+                    result[i] = scale[0];
             }
-        } else if (i < 0) {
-            for (int step = 0; step > i; step--) {
-                Arrays.sort(result);
-                result[result.length - 1] -= 12;
-            }
         }
-        Arrays.sort(result);
+
         return result;
+    }
+
+    static void writeJson(
+            String key,
+            String[] a,
+            String[] b
+    ) throws Exception {
+
+        PrintWriter pw =
+                new PrintWriter(
+                        new FileWriter(
+                                "chords.json"
+                        )
+                );
+
+        pw.println("{");
+        pw.println("  \"bpm\": 90,");
+        pw.println("  \"key\": \"" + key + "\",");
+        pw.println("  \"patterns\": [");
+
+        pw.println("    {");
+        pw.println("      \"name\": \"A\",");
+        pw.println("      \"chords\": " +
+                Arrays.toString(a)
+                        .replace(" ", "")
+                        .replace("[", "[\"")
+                        .replace("]", "\"]")
+                        .replace(",", "\",\""));
+        pw.println("    },");
+
+        pw.println("    {");
+        pw.println("      \"name\": \"B\",");
+        pw.println("      \"chords\": " +
+                Arrays.toString(b)
+                        .replace(" ", "")
+                        .replace("[", "[\"")
+                        .replace("]", "\"]")
+                        .replace(",", "\",\""));
+        pw.println("    }");
+
+        pw.println("  ]");
+        pw.println("}");
+
+        pw.close();
+    }
+
+    static String extract(
+            String json,
+            String key
+    ) {
+
+        String pattern =
+                "\"" + key + "\":";
+
+        int start =
+                json.indexOf(pattern);
+
+        if (start == -1)
+            return "";
+
+        start += pattern.length();
+
+        if (json.charAt(start) == '"') {
+
+            start++;
+
+            int end =
+                    json.indexOf(
+                            "\"",
+                            start
+                    );
+
+            return json.substring(
+                    start,
+                    end
+            );
+        }
+
+        return "";
+    }
+
+    static String clean(
+            String s
+    ) {
+
+        return s == null
+                ? ""
+                : s.replace("\"", "")
+                .trim();
     }
 }

@@ -1,27 +1,14 @@
 {
   "bpm": 90,
-  "key": "C",
-  "rhythm_style": "medium",
+  "key": "A",
   "patterns": [
     {
       "name": "A",
-      "chords": ["C", "G", "Am", "Em"]
+      "chords": ["F#m","D","E","A"]
     },
     {
       "name": "B",
-      "chords": ["F", "G", "Em", "Am"]
-    },
-    {
-      "name": "C",
-      "chords": ["F", "C", "Dm", "Am"]
-    },
-    {
-      "name": "D",
-      "chords": ["C", "G", "Am", "F"]
-    },
-    {
-      "name": "E",
-      "chords": ["F", "G", "Em", "Am"]
+      "chords": ["D","A","Bm","F#m"]
     }
   ]
 }
