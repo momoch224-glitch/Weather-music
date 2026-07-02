@@ -1,0 +1,4 @@
+﻿weather_feature,music_parameter,recommended_use
+volume,BPM/velocity,曲全体のテンポと音量
+drama,rhythm_pattern,リズムパターンの選択
+wind_zscore,melody_density,1小節あたりの音数
