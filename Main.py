@@ -3,6 +3,7 @@ import glob
 import shutil
 import subprocess
 import sys
+import random
 
 import note_seq
 from note_seq.protobuf import music_pb2
@@ -10,8 +11,250 @@ from note_seq import midi_io
 
 print("最新版Main.py起動")
 
-
 CHECKPOINT = "C:/AI/models/cat-mel_2bar_big.ckpt"
+
+NOTE_MAP = {
+    "C": 60,
+    "C#": 61,
+    "D": 62,
+    "D#": 63,
+    "E": 64,
+    "F": 65,
+    "F#": 66,
+    "G": 67,
+    "G#": 68,
+    "A": 69,
+    "A#": 70,
+    "B": 71
+}
+RHYTHM_LIBRARY = {
+
+    "whole":              4.0,
+    "dotted_half":        3.0,
+    "half":               2.0,
+    "dotted_quarter":     1.5,
+    "quarter":            1.0,
+    "dotted_eighth":      0.75,
+    "eighth":             0.5,
+    "sixteenth":          0.25,
+
+    "whole_rest":         -4.0,
+    "dotted_half_rest":   -3.0,
+    "half_rest":          -2.0,
+    "dotted_quarter_rest":-1.5,
+    "quarter_rest":       -1.0,
+    "dotted_eighth_rest": -0.75,
+    "eighth_rest":        -0.5,
+    "sixteenth_rest":     -0.25,
+
+    "triplet":            1.0 / 3.0
+}
+
+def generate_one_bar(seasoon):
+    remaining_beats = 4.0
+
+    rhythm_list = []
+
+    while remaining_beats > 0:
+
+        candidates = {}
+
+        for rhythm_name,duration in RHYTHM_LIBRARY.items():
+
+            if duration <= remaining_beats:
+
+                candidates[rhythm_name] = (RHYTHM_WEIght[season][rhythm_name])
+
+        rhythm_name -list(candidates.keys() )
+        thm_weights = list(candidates.values())
+
+        selected_rhythm = random.chooices(rhythm_names,weights=rhythm_weights,k=1)[0]
+
+        duration = RHYTHM_LIBRARY[selected_rhythm]
+
+        rhythm_list.apppend(selected_rhythm)
+
+        remaining_beats -= duration 
+
+    return rhythm_list
+
+RHYTHM_WEIGHT = {
+
+    "春": {
+        #八分音符/付点八分音符
+        "whole":10,
+        "dotted_half":15,
+        "half":20,
+        "dotted_quarter":20,
+        "quarter":20,
+        "dotted_eighth":40,
+        "eighth":40,
+        "sixteenth":25,
+        "whole_rest":2,
+        "dotted_half_rest":5,
+        "half_rest":5,
+        "dotted_quarter_rest":7,
+        "quarter_rest":7,
+        "dotted_eighth_rest":10,
+        "eighth_rest":10,
+        "sixteenth_rest":10,
+        "triplet":20
+    },
+
+    "夏": {
+        #四分音符/付点四分音符
+        "whole":10,
+        "dotted_half":15,
+        "half":20,
+        "dotted_quarter":40,
+        "quarter":40,
+        "dotted_eighth":20,
+        "eighth":20,
+        "sixteenth":20,
+        "whole_rest":2,
+        "dotted_half_rest":5,
+        "half_rest":5,
+        "dotted_quarter_rest":7,
+        "quarter_rest":7,
+        "dotted_eighth_rest":10,
+        "eighth_rest":10,
+        "sixteenth_rest":10,
+        "triplet":20
+    },
+
+    "秋": {
+        #四分音符/三連符
+        "whole":10,
+        "dotted_half":15,
+        "half":20,
+        "dotted_quarter":20,
+        "quarter":40,
+        "dotted_eighth":20,
+        "eighth":20,
+        "sixteenth":20,
+        "whole_rest":2,
+        "dotted_half_rest":5,
+        "half_rest":5,
+        "dotted_quarter_rest":7,
+        "quarter_rest":7,
+        "dotted_eighth_rest":10,
+        "eighth_rest":10,
+        "sixteenth_rest":10,
+        "triplet":40
+    },
+
+    "冬": {
+        #四分音符/八分音符
+        "whole":10,
+        "dotted_half":15,
+        "half":20,
+        "dotted_quarter":20,
+        "quarter":40,
+        "dotted_eighth":20,
+        "eighth":40,
+        "sixteenth":20,
+        "whole_rest":2,
+        "dotted_half_rest":5,
+        "half_rest":5,
+        "dotted_quarter_rest":7,
+        "quarter_rest":7,
+        "dotted_eighth_rest":10,
+        "eighth_rest":10,
+        "sixteenth_rest":10,
+        "triplet":20
+    }
+
+}
+def choose_rhythm(season):
+    weights = RHYTHM_WEIGHT[season]
+
+    rhythm_names = list(weights.keys())
+
+    rhythm_weights = list(weights.values())
+
+    selected_rhythm = random.choices(rhythm_names,weights=rhythm_weights,k=1)[0]
+
+    return selected_rhythm
+
+
+
+def chord_to_notes(chord):
+
+    if chord.endswith("M7"):
+
+        root_name = chord[:-2]
+
+        root = NOTE_MAP.get(
+            root_name,
+            60
+        )
+
+        return [
+            root,
+            root + 4,
+            root + 7,
+            root + 11
+        ]
+
+    elif chord.endswith("m7"):
+
+        root_name = chord[:-2]
+
+        root = NOTE_MAP.get(
+            root_name,
+            60
+        )
+
+        return [
+            root,
+            root + 3,
+            root + 7,
+            root + 10
+        ]
+
+    elif chord.endswith("7"):
+
+        root_name = chord[:-1]
+
+        root = NOTE_MAP.get(
+            root_name,
+            60
+        )
+
+        return [
+            root,
+            root + 4,
+            root + 7,
+            root + 10
+        ]
+
+    elif chord.endswith("m"):
+
+        root_name = chord[:-1]
+
+        root = NOTE_MAP.get(
+            root_name,
+            60
+        )
+
+        return [
+            root,
+            root + 3,
+            root + 7
+        ]
+
+    else:
+
+        root = NOTE_MAP.get(
+            chord,
+            60
+        )
+
+        return [
+            root,
+            root + 4,
+            root + 7
+        ]
 
 
 def create_melody_midi(pattern, bpm):
@@ -19,22 +262,24 @@ def create_melody_midi(pattern, bpm):
     seq = music_pb2.NoteSequence()
 
     seq.ticks_per_quarter = 220
-    seq.tempos.add(qpm=bpm)
 
-    melody_map = {
-        "C": [60, 64],
-        "Dm": [62, 65],
-        "Em": [64, 67],
-        "F": [65, 69],
-        "G": [67, 71],
-        "Am": [69, 72]
-    }
+    seq.tempos.add(
+        qpm=bpm
+    )
 
     note_index = 0
 
     for chord in pattern["chords"]:
 
-        notes = melody_map.get(chord, [60, 64])
+        notes = chord_to_notes(
+            chord
+        )
+
+        print(
+            chord,
+            "->",
+            notes
+        )
 
         for pitch in notes:
 
@@ -54,15 +299,20 @@ def create_melody_midi(pattern, bpm):
 
     seq.total_time = note_index * 0.5
 
-    filename = pattern["name"] + ".mid"
+    filename = (
+        pattern["name"]
+        + ".mid"
+    )
 
     note_seq.sequence_proto_to_midi_file(
         seq,
         filename
     )
 
-    print(filename + " 作成完了")
-
+    print(
+        filename,
+        "作成完了"
+    )
 
 def generate_midis():
 
@@ -119,6 +369,7 @@ def interpolate(midi1, midi2, outdir):
     )
 
     if result.returncode != 0:
+
         raise RuntimeError(
             "MusicVAE失敗"
         )
@@ -138,17 +389,19 @@ def append_sequence(
         new_note.velocity = note.velocity
 
         new_note.start_time = (
-            note.start_time +
-            current_time
+            note.start_time
+            + current_time
         )
 
         new_note.end_time = (
-            note.end_time +
-            current_time
+            note.end_time
+            + current_time
         )
 
-    return current_time + seq.total_time
-
+    return (
+        current_time
+        + seq.total_time
+    )
 
 def merge_all():
 
@@ -156,25 +409,28 @@ def merge_all():
 
     merged = music_pb2.NoteSequence()
 
-    merged.tempos.add(qpm=90)
+    merged.tempos.add(
+        qpm=90
+    )
 
     current_time = 0.0
 
     structure = [
 
-        ("A.mid", None),
+        ("A.mid", False),
 
         ("ab_interp", True),
-        ("B.mid", None),
+
+        ("B.mid", False),
 
         ("bc_interp", True),
-        ("C.mid", None),
+        ("C.mid", False),
 
         ("cd_interp", True),
-        ("D.mid", None),
+        ("D.mid", False),
 
         ("de_interp", True),
-        ("E.mid", None)
+        ("E.mid", False)
     ]
 
     for item, is_folder in structure:
@@ -183,52 +439,46 @@ def merge_all():
 
             mids = sorted(
                 glob.glob(
-                    item + "/*of-005.mid"
+                    item + "/*.mid"
                 )
             )
 
             for midi_file in mids:
 
                 seq = (
-                    midi_io
-                    .midi_file_to_note_sequence(
+                    midi_io.midi_file_to_note_sequence(
                         midi_file
                     )
                 )
 
-                current_time = (
-                    append_sequence(
-                        merged,
-                        seq,
-                        current_time
-                    )
+                current_time = append_sequence(
+                    merged,
+                    seq,
+                    current_time
                 )
 
         else:
 
             seq = (
-                midi_io
-                .midi_file_to_note_sequence(
+                midi_io.midi_file_to_note_sequence(
                     item
                 )
             )
 
-            current_time = (
-                append_sequence(
-                    merged,
-                    seq,
-                    current_time
-                )
+            current_time = append_sequence(
+                merged,
+                seq,
+                current_time
             )
 
     merged.total_time = current_time
 
     note_seq.sequence_proto_to_midi_file(
         merged,
-        "final.mid"
+        "Final.mid"
     )
 
-    print("final.mid 作成完了")
+    print("Final.mid 作成完了")
 
 
 if __name__ == "__main__":
@@ -237,30 +487,20 @@ if __name__ == "__main__":
 
     generate_midis()
 
-    interpolate(
-        "A.mid",
-        "B.mid",
-        "ab_interp"
-    )
-
-    interpolate(
-        "B.mid",
-        "C.mid",
-        "bc_interp"
-    )
-
-    interpolate(
-        "C.mid",
-        "D.mid",
-        "cd_interp"
-    )
-
-    interpolate(
-        "D.mid",
-        "E.mid",
-        "de_interp"
-    )
+    interpolate("A.mid","B.mid","ab_interp")
+    interpolate("B.mid","C.mid","bc_interp")
+    interpolate("C.mid","D.mid","cd_interp")
+    interpolate("D.mid","E.mid","de_interp")
 
     merge_all()
 
     print("全処理完了")
+
+    print("rizumutesuto")
+
+    for i in range(20):
+
+        rhythm = choose_rhythm("春")
+        print(i+1,rhythm)
+
+    print("rizumutestuowari")    
