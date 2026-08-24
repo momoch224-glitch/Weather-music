@@ -1,4 +1,4 @@
-// config.js からAPIキーを取得
+// script.js
 const API_KEY = CONFIG.API_KEY;
 
 // 1. 地図の初期設定
@@ -9,17 +9,14 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let currentMarker = null;
 
-// 2. マーカーを更新する共通関数
 function updateMarker(lat, lon) {
-    if (currentMarker) {
-        map.removeLayer(currentMarker);
-    }
+    if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker([lat, lon]).addTo(map)
         .bindPopup("天気を取得しています...☁️")
         .openPopup();
 }
 
-// 3. 地図をクリックした時の処理
+// 地図をクリックした時の処理
 map.on('click', function(e) {
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
@@ -27,51 +24,58 @@ map.on('click', function(e) {
     getWeather(lat, lon);
 });
 
-// 4. ボタンを押した時の処理
+// ボタンを押した時の処理
 document.getElementById("getWeatherButton").onclick = function () {
+    document.getElementById("status-text").textContent = "位置情報を取得中...";
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            
-            map.setView([lat, lon], 12); // 現在地にズーム
+            map.setView([lat, lon], 12);
             updateMarker(lat, lon);
             getWeather(lat, lon);
         },
         () => {
-            document.getElementById("city").textContent = "Location Error";
-            document.getElementById("condition").textContent = "位置情報を取得できません";
+            document.getElementById("status-text").textContent = "位置情報を取得できません";
         }
     );
 };
 
-// 5. 天気を取得して画面を更新する処理
+// 天気を取得する処理
+// 天気を取得して画面を更新する処理
 async function getWeather(lat, lon) {
+    const loadingOverlay = document.getElementById("loading-overlay");
+
     try {
+        // 🌟 処理開始：ロード画面を表示する
+        loadingOverlay.classList.remove("hidden");
+        loadingOverlay.classList.add("flex");
+
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
         const response = await fetch(url);
         
         if (!response.ok) throw new Error("API Error");
 
         const data = await response.json();
-        const cityName = data.name ? data.name : "不明な場所（海など）";
+        const cityName = data.name ? data.name : "不明な場所";
         
-        // HTMLのカード部分を更新
-        document.getElementById("city").textContent = cityName;
-        document.getElementById("condition").textContent = data.weather[0].main;
-        document.getElementById("temp").textContent = data.main.temp + "℃";
-        document.getElementById("humidity").textContent = "Humidity: " + data.main.humidity + "%";
+        // 🌟 バックエンド（Java）での音楽生成にかかる時間を想定した仮の待機時間（2秒）
+        // ※実際にお友達のAPIと通信するようになったらこの行は消してください
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        UI.updateWeatherUI(data, cityName);
 
-        // 地図のピンの吹き出しも更新
+        document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
+
         if (currentMarker) {
-            currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${data.main.temp}℃`).openPopup();
+            currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${Math.round(data.main.temp)}℃`).openPopup();
         }
 
     } catch (err) {
-        document.getElementById("city").textContent = "Error";
-        document.getElementById("condition").textContent = err.message;
-        if (currentMarker) {
-            currentMarker.bindPopup("取得失敗").openPopup();
-        }
+        document.getElementById("status-text").textContent = "天気の取得に失敗しました";
+    } finally {
+        // 🌟 処理完了：成功しても失敗してもロード画面を消す
+        loadingOverlay.classList.add("hidden");
+        loadingOverlay.classList.remove("flex");
     }
 }
