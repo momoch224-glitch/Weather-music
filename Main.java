@@ -15,8 +15,7 @@ public class Main {
             System.out.print("都市名を入力してください: ");
             String city = scanner.nextLine();
 
-            System.out.print("i (-10～10) を入力してください: ");
-            int i = scanner.nextInt();
+            
 
             ProcessBuilder pb = new ProcessBuilder(
                     "python",
@@ -78,52 +77,99 @@ public class Main {
 
                 default:
                     weather = "不明";
-            }
+                }
 
-            int baseNote =
-                    switch (season) {
+                String[] majorKeys = {
+                        "C",
+                        "C#",
+                        "D",
+                        "D#",
+                        "E",
+                        "F",
+                        "F#",
+                        "G",
+                        "G#",
+                        "A",
+                        "A#",
+                        "B"
+                };
+                
 
-                        case "春" -> 60;
-                        case "夏" -> 67;
-                        case "秋" -> 64;
-                        case "冬" -> 62;
+                String[] minorKeys = {
+                        "Am",
+                        "A#m",
+                        "Bm",
+                        "Cm",
+                        "C#m",
+                        "Dm",
+                        "D#m",
+                        "Em",
+                        "Fm",
+                        "F#m",
+                        "Gm",
+                        "G#m"
+                };
 
-                        default -> 60;
-                    };
+                Random random = new Random();
 
-            String type =
-                    weather.equals("晴れ")
-                            ? "dur"
-                            : "moll";
+                String key1;
+                String type;
 
-            int root =
-                    weather.equals("晴れ")
-                            ? baseNote
-                            : baseNote + 9;
+                if (weather.equals("晴れ")) {
 
-            int finalNote =
-                    (root + i + 120) % 12;
+                key1 =
+                        majorKeys[
+                                random.nextInt(
+                                        majorKeys.length
+                                )
+                        ];
 
-            String[] noteNames = {
-                    "C",
-                    "C#",
-                    "D",
-                    "D#",
-                    "E",
-                    "F",
-                    "F#",
-                    "G",
-                    "G#",
-                    "A",
-                    "A#",
-                    "B"
-            };
+                type = "dur";
 
-            String key1 =
-                    noteNames[root % 12];
+                }
+                else if (weather.equals("雨")) {
 
-            String key2 =
-                    noteNames[finalNote];
+                key1 =
+                        minorKeys[
+                                random.nextInt(
+                                        minorKeys.length
+                                )
+                        ];
+
+                type = "moll";
+
+                }
+                else {
+
+                boolean major =
+                        random.nextBoolean();
+
+                if (major) {
+
+                        key1 =
+                                majorKeys[
+                                        random.nextInt(
+                                                majorKeys.length
+                                        )
+                                ];
+
+                        type = "dur";
+
+                }
+                else {
+
+                        key1 =
+                                minorKeys[
+                                        random.nextInt(
+                                                minorKeys.length
+                                        )
+                                ];
+
+                        type = "moll";
+                }
+                }
+
+         
 
             System.out.println(
                     "季節 = " + season
@@ -132,20 +178,55 @@ public class Main {
             System.out.println(
                     "天気 = " + weather
             );
+            String key2 = "";
 
-            System.out.println(
+            if(weather.equals("晴れ")) {
+
+                if(random.nextBoolean()) {
+
+                        key2 =
+                                getDominant(key1);
+
+                } else {
+
+                        key2 =
+                                getSubDominant(key1);
+                }
+
+                }
+                else if(weather.equals("雨")) {
+
+                if(random.nextBoolean()) {
+
+                        key2 =
+                                getDominant(key1);
+
+                } else {
+
+                        key2 =
+                                getSubDominant(key1);
+                }
+
+                }
+                else {
+
+                key2 =
+                        getParallel(key1);
+                }
+
+        System.out.println(
                     "生成キー① = "
                             + key1
                             + " "
                             + type
             );
 
-            System.out.println(
-                    "生成キー② = "
-                            + key2
-                            + " "
-                            + type
-            );
+                
+        System.out.println(
+                        "生成キー② = "
+                                + key2
+                );            
+                        
 
             String[] patternA;
 
@@ -222,31 +303,207 @@ public class Main {
 
                 default:
 
-                    patternB = new String[]{
+                patternB = new String[]{
                             "IV",
                             "I",
                             "IIm",
                             "VIm"
-                    };
-            }
+                        };
+                }
 
-            String[] chordsA =
-                    convertRomanToKey(
-                            key1,
-                            patternA
-                    );
+                String[] patternC;
 
-            String[] chordsB =
-                    convertRomanToKey(
-                            key1,
-                            patternB
-                    );
+                switch(weather) {
+                case "晴れ":
 
-            writeJson(
-                    key1,
-                    chordsA,
-                    chordsB
-            );
+                        patternC = new String[]{
+                                "IV",
+                                "V",
+                                "IIIm",
+                                "VIm"
+                        };
+                        break;
+
+                case "曇り":
+                        patternC = new String[]{
+                                "IV",
+                                "IIIm",
+                                "VIm",
+                                "I"
+                        };
+                        break;
+
+                default:
+                        patternC = new String[]{
+                                "VIm",
+                                "IV",
+                                "I",
+                                "V"
+                        };
+                }
+
+                
+                String[] patternD;
+
+                switch(weather) {
+                case "晴れ":
+                        patternD = new String[]{
+                                "IIm",
+                                "V",
+                                "I",
+                                "VIm"
+                        };
+                        break;
+
+                case "曇り":
+                        patternD = new String[]{
+                                "IIm",
+                                "IIIm",
+                                "IV",
+                                "V"
+                        };
+                        break;
+                default:
+                        patternD = new String[]{
+                                "IV",
+                                "V",
+                                "VIm",
+                                "IIIm"
+                        };
+                }
+
+                String[] patternE;
+
+
+                switch(season) {
+                case "春":
+                        patternE = new String[]{
+                                "IV",
+                                "V",
+                                "I",
+                                "I"
+                        };
+                        break;
+
+                case "夏":
+                        patternE = new String[]{
+                                "IV",
+                                "V",
+                                "VIm",
+                                "I"
+                        };
+                        break;
+
+                case "秋":
+                        patternE = new String[]{
+                                "IV",
+                                "IIIm",
+                                "IIm",
+                                "I"
+                        };
+                        break;
+
+                default:
+                        patternE = new String[]{
+                                "VIm",
+                                "IV",
+                                "V",
+                                "I"
+                        };
+                }
+
+                String convertKey = key1;
+
+                        if(convertKey.endsWith("m")) {
+
+                        convertKey =
+                                convertKey.substring(
+                                        0,
+                                        convertKey.length() - 1
+                        );
+                }
+                String convertKey2 = key2;
+
+                if(convertKey2.endsWith("m")) {
+                convertKey2 =
+                        convertKey2.substring(
+                        0,
+                        convertKey2.length() - 1
+                        );
+                }
+
+                String[] chordsD;
+                String[] chordsE;
+
+                if(key2.endsWith("m")) {
+
+                        chordsD =
+                                convertRomanToMinorKey(
+                                        convertKey2,
+                                        patternD
+                                );
+
+                        chordsE =
+                                convertRomanToMinorKey(
+                                        convertKey2,
+                                        patternE
+                                );
+
+                        }
+                 else {
+
+                        chordsD =
+                                convertRomanToKey(
+                                        convertKey2,
+                                        patternD
+                                );
+
+                        chordsE =
+                                convertRomanToKey(
+                                        convertKey2,
+                                        patternE
+                                );
+                        }
+
+
+                String[] chordsA =
+                        convertRomanToKey(
+                                        convertKey,
+                                        patternA
+                        );
+
+                String[] chordsB =
+                        convertRomanToKey(
+                                        convertKey,
+                                        patternB
+                        );
+
+
+                String[] chordsC;
+
+                if(type.equals("moll")){
+                chordsC = convertMinorPatternC(convertKey);
+                }else{
+                chordsC = convertRomanToKey(
+                        convertKey,
+                        patternC
+                );
+                }   
+
+                System.out.println(
+                "season debug = [" + season + "]"
+                );
+
+                writeJson(
+                season,
+                key1,
+                key2,
+                chordsA,
+                chordsB,
+                chordsC,
+                chordsD,
+                chordsE
+                );
 
             System.out.println(
                     "chords.json 作成完了"
@@ -275,15 +532,195 @@ public class Main {
 
             e.printStackTrace();
         }
-    }
+}
 
-    static String[] convertRomanToKey(
-            String key,
-            String[] roman
-    ) {
+
+        static String getDominant(String key) {
+
+        String[] major = {
+                "C","G","D","A","E","B",
+                "F#","C#","G#","D#","A#","F"
+        };
+
+        String[] minor = {
+                "Am","Em","Bm","F#m","C#m","G#m",
+                "D#m","A#m","Fm","Cm","Gm","Dm"
+        };
+
+        if(key.endsWith("m")) {
+
+                for(int i = 0; i < minor.length; i++) {
+
+                if(minor[i].equals(key)) {
+
+                        return minor[
+                                (i + 1) % minor.length
+                        ];
+                }
+                }
+
+        } else {
+
+                for(int i = 0; i < major.length; i++) {
+
+                if(major[i].equals(key)) {
+
+                        return major[
+                                (i + 1) % major.length
+                        ];
+                }
+                }
+        }
+
+        return key;
+        }
+
+        static String getSubDominant(String key) {
+
+        String[] major = {
+                "C","G","D","A","E","B",
+                "F#","C#","G#","D#","A#","F"
+        };
+
+        String[] minor = {
+                "Am","Em","Bm","F#m","C#m","G#m",
+                "D#m","A#m","Fm","Cm","Gm","Dm"
+        };
+
+        if(key.endsWith("m")) {
+
+                for(int i = 0; i < minor.length; i++) {
+
+                if(minor[i].equals(key)) {
+
+                        return minor[
+                                (i - 1 + minor.length)
+                                        % minor.length
+                        ];
+                }
+                }
+
+        } else {
+
+                for(int i = 0; i < major.length; i++) {
+
+                if(major[i].equals(key)) {
+
+                        return major[
+                                (i - 1 + major.length)
+                                        % major.length
+                        ];
+                }
+                }
+        }
+
+        return key;
+        }      
+
+        static String getParallel(String key) {
+
+                switch(key) {
+
+                        case "C": return "Am";
+                        case "Am": return "C";
+
+                        case "G": return "Em";
+                        case "Em": return "G";
+
+                        case "D": return "Bm";
+                        case "Bm": return "D";
+
+                        case "A": return "F#m";
+                        case "F#m": return "A";
+
+                        case "E": return "C#m";
+                        case "C#m": return "E";
+
+                        case "B": return "G#m";
+                        case "G#m": return "B";
+
+                        case "F": return "Dm";
+                        case "Dm": return "F";
+                        case "C#": return "A#m";
+                        case "A#m": return "C#";
+
+                        case "D#": return "Cm";
+                        case "Cm": return "D#";
+
+                        case "F#": return "D#m";
+                        case "D#m": return "F#";
+
+                        case "G#": return "Fm";
+                        case "Fm": return "G#";
+
+                        case "A#": return "Gm";
+                        case "Gm": return "A#";
+
+                        default:
+                        return key;
+                }
+        }
+        static String baseChord(String chord) {
+
+                return chord
+                        .replace("dim", "")
+                        .replace("m", "");
+
+        }
+
+
+        static String buildChord(
+                String chord,
+                String suffix
+        ) {
+
+        chord = baseChord(chord);
+
+        if (suffix.equals("m")) {
+
+                return chord + "m";
+
+        }
+
+        if (suffix.equals("7")) {
+
+                return chord + "7";
+
+        }
+
+        if (suffix.equals("m7")) {
+
+                return chord + "m7";
+
+        }
+
+        if (suffix.equals("M7")) {
+
+                return chord + "M7";
+
+        }
+
+        return chord;
+        }        
+
+        static String[] convertRomanToKey(
+                 String key,
+                String[] roman
+        )  {
 
         Map<String, String[]> map =
                 new HashMap<>();
+
+                    Map<String,Integer> romanMap =
+            new HashMap<>();
+
+        romanMap.put("I",0);
+        romanMap.put("II",1);
+        romanMap.put("III",2);
+        romanMap.put("IV",3);
+        romanMap.put("V",4);
+        romanMap.put("VI",5);
+        romanMap.put("VII",6);
 
         map.put(
                 "C",
@@ -337,6 +774,71 @@ public class Main {
                 }
         );
 
+
+                map.put(
+                "E",
+                new String[]{
+                        "E",
+                        "F#m",
+                        "G#m",
+                        "A",
+                        "B",
+                        "C#m",
+                        "D#dim"
+                }
+        );
+
+        map.put(
+                "B",
+                new String[]{
+                        "B",
+                        "C#m",
+                        "D#m",
+                        "E",
+                        "F#",
+                        "G#m",
+                        "A#dim"
+                }
+        );
+        map.put(
+        "F#",
+        new String[]{
+                "F#",
+                "G#m",
+                "A#m",
+                "B",
+                "C#",
+                "D#m",
+                "Fdim"
+        }
+        );
+
+        map.put(
+        "C#",
+        new String[]{
+                "C#",
+                "D#m",
+                "Fm",
+                "F#",
+                "G#",
+                "A#m",
+                "Cdim"
+        }
+        );
+
+        map.put(
+        "G#",
+        new String[]{
+                "G#",
+                "A#m",
+                "Cm",
+                "C#",
+                "D#",
+                "Fm",
+                "Gdim"
+        }
+        );
+
         map.put(
                 "F",
                 new String[]{
@@ -349,6 +851,30 @@ public class Main {
                         "Edim"
                 }
         );
+        map.put(
+                "D#",
+                new String[]{
+                        "D#",
+                        "Fm",
+                        "Gm",
+                        "G#",
+                        "A#",
+                        "Cm",
+                        "Ddim"
+                }
+        );
+        map.put(
+                "A#",
+                new String[]{
+                        "A#",
+                        "Cm",
+                        "Dm",
+                        "D#",
+                        "F",
+                        "Gm",
+                        "Adim"
+                }
+        );
 
         String[] scale =
                 map.getOrDefault(
@@ -359,85 +885,430 @@ public class Main {
         String[] result =
                 new String[roman.length];
 
+        
         for (int i = 0; i < roman.length; i++) {
 
-            switch (roman[i]) {
+        String symbol = roman[i];
 
-                case "I":
-                    result[i] = scale[0];
-                    break;
+        String romanPart = "";
+        String suffix = "";
 
-                case "IIm":
-                    result[i] = scale[1];
-                    break;
+        for (String r : romanMap.keySet()) {
 
-                case "IIIm":
-                    result[i] = scale[2];
-                    break;
+                if (symbol.startsWith(r)) {
 
-                case "IV":
-                    result[i] = scale[3];
-                    break;
+                if (r.length() > romanPart.length()) {
 
-                case "V":
-                    result[i] = scale[4];
-                    break;
+                        romanPart = r;
 
-                case "VIm":
-                    result[i] = scale[5];
-                    break;
+                }
 
-                default:
-                    result[i] = scale[0];
-            }
+                }
+
         }
+
+        suffix =
+                symbol.substring(
+                        romanPart.length()
+                );
+
+        int index =
+                romanMap.get(
+                        romanPart
+                );
+
+        String chord =
+                scale[index];
+
+        if (suffix.equals("m")) {
+
+                chord =
+                        baseChord(chord)
+                        + "m";
+
+        }
+
+        else if (suffix.equals("7")) {
+
+                chord =
+                        baseChord(chord)
+                        + "7";
+
+        }
+
+        else if (suffix.equals("m7")) {
+
+                chord =
+                        baseChord(chord)
+                        + "m7";
+
+        }
+
+        else if (suffix.equals("M7")) {
+
+                chord =
+                        baseChord(chord)
+                        + "M7";
+
+        }
+
+        result[i] = chord;
+
+        }        
 
         return result;
     }
 
-    static void writeJson(
-            String key,
-            String[] a,
-            String[] b
-    ) throws Exception {
+    static String[] convertRomanToMinorKey(
+        String key,
+        String[] roman
+) {
 
-        PrintWriter pw =
-                new PrintWriter(
-                        new FileWriter(
-                                "chords.json"
-                        )
+    Map<String, String[]> map =
+            new HashMap<>();
+
+    map.put(
+            "A",
+            new String[]{
+                    "Am",
+                    "Bdim",
+                    "C",
+                    "Dm",
+                    "Em",
+                    "F",
+                    "G"
+            }
+    );
+
+    map.put(
+            "A#",
+            new String[]{
+                    "A#m",
+                    "Cdim",
+                    "C#",
+                    "D#m",
+                    "Fm",
+                    "F#",
+                    "G#"
+            }
+    );
+
+    map.put(
+            "B",
+            new String[]{
+                    "Bm",
+                    "C#dim",
+                    "D",
+                    "Em",
+                    "F#m",
+                    "G",
+                    "A"
+            }
+    );
+
+    map.put(
+            "C",
+            new String[]{
+                    "Cm",
+                    "Ddim",
+                    "D#",
+                    "Fm",
+                    "Gm",
+                    "G#",
+                    "A#"
+            }
+    );
+
+    map.put(
+            "C#",
+            new String[]{
+                    "C#m",
+                    "D#dim",
+                    "E",
+                    "F#m",
+                    "G#m",
+                    "A",
+                    "B"
+            }
+    );
+
+    map.put(
+            "D",
+            new String[]{
+                    "Dm",
+                    "Edim",
+                    "F",
+                    "Gm",
+                    "Am",
+                    "A#",
+                    "C"
+            }
+    );
+
+    map.put(
+            "D#",
+            new String[]{
+                    "D#m",
+                    "Fdim",
+                    "F#",
+                    "G#m",
+                    "A#m",
+                    "B",
+                    "C#"
+            }
+    );
+
+    map.put(
+            "E",
+            new String[]{
+                    "Em",
+                    "F#dim",
+                    "G",
+                    "Am",
+                    "Bm",
+                    "C",
+                    "D"
+            }
+    );
+
+    map.put(
+            "F",
+            new String[]{
+                    "Fm",
+                    "Gdim",
+                    "G#",
+                    "A#m",
+                    "Cm",
+                    "C#",
+                    "D#"
+            }
+    );
+
+    map.put(
+            "F#",
+            new String[]{
+                    "F#m",
+                    "G#dim",
+                    "A",
+                    "Bm",
+                    "C#m",
+                    "D",
+                    "E"
+            }
+    );
+
+    map.put(
+            "G",
+            new String[]{
+                    "Gm",
+                    "Adim",
+                    "A#",
+                    "Cm",
+                    "Dm",
+                    "D#",
+                    "F"
+            }
+    );
+
+    map.put(
+            "G#",
+            new String[]{
+                    "G#m",
+                    "A#dim",
+                    "B",
+                    "C#m",
+                    "D#m",
+                    "E",
+                    "F#"
+            }
+    );
+
+    Map<String,Integer> romanMap =
+            new HashMap<>();
+
+    romanMap.put("I",0);
+    romanMap.put("II",1);
+    romanMap.put("III",2);
+    romanMap.put("IV",3);
+    romanMap.put("V",4);
+    romanMap.put("VI",5);
+    romanMap.put("VII",6);
+
+    String[] scale =
+            map.getOrDefault(
+                    key,
+                    map.get("A")
+            );
+
+    String[] result =
+            new String[roman.length];
+
+    for(int i = 0; i < roman.length; i++) {
+
+        String symbol = roman[i];
+
+        String romanPart = "";
+
+        for(String r : romanMap.keySet()) {
+
+            if(symbol.startsWith(r)) {
+
+                if(r.length()
+                        > romanPart.length()) {
+
+                    romanPart = r;
+                }
+            }
+        }
+
+        String suffix =
+                symbol.substring(
+                        romanPart.length()
                 );
+
+        int index =
+                romanMap.get(
+                        romanPart
+                );
+
+        String chord =
+                scale[index];
+
+        if(suffix.equals("m")) {
+            chord =
+                    baseChord(chord)
+                    + "m";
+        }
+        else if(suffix.equals("7")) {
+            chord =
+                    baseChord(chord)
+                    + "7";
+        }
+        else if(suffix.equals("m7")) {
+            chord =
+                    baseChord(chord)
+                    + "m7";
+        }
+        else if(suffix.equals("M7")) {
+            chord =
+                    baseChord(chord)
+                    + "M7";
+        }
+
+        result[i] = chord;
+    }
+
+    return result;
+}
+
+        static String[] convertMinorPatternC(String key) {
+
+        Map<String, String[]> map = new HashMap<>();
+
+        map.put("A",  new String[]{"Dm7","G7","CM7","Am7"});
+        map.put("A#", new String[]{"D#m7","G#7","C#M7","A#m7"});
+        map.put("B",  new String[]{"Em7","A7","DM7","Bm7"});
+        map.put("C",  new String[]{"Fm7","A#7","D#M7","Cm7"});
+        map.put("C#", new String[]{"F#m7","B7","EM7","C#m7"});
+        map.put("D",  new String[]{"Gm7","C7","FM7","Dm7"});
+        map.put("D#", new String[]{"G#m7","C#7","F#M7","D#m7"});
+        map.put("E",  new String[]{"Am7","D7","GM7","Em7"});
+        map.put("F",  new String[]{"A#m7","D#7","G#M7","Fm7"});
+        map.put("F#", new String[]{"Bm7","E7","AM7","F#m7"});
+        map.put("G",  new String[]{"Cm7","F7","A#M7","Gm7"});
+        map.put("G#", new String[]{"C#m7","F#7","BM7","G#m7"});
+
+        return map.getOrDefault(
+                key,
+                map.get("A")
+        );
+        }
+
+static void writeJson(
+    String season,
+    String key1,
+    String key2,
+    String[] a,
+    String[] b,
+    String[] c,
+    String[] d,
+    String[] e
+)throws Exception {
+
+    PrintWriter pw =
+            new PrintWriter(
+                    new FileWriter(
+                            "chords.json"
+                    )
+            );
 
         pw.println("{");
         pw.println("  \"bpm\": 90,");
-        pw.println("  \"key\": \"" + key + "\",");
+        pw.println("  \"season\": \"" + season + "\",");
+        pw.println("  \"key1\": \"" + key1 + "\",");
+        pw.println("  \"key2\": \"" + key2 + "\",");
         pw.println("  \"patterns\": [");
 
-        pw.println("    {");
-        pw.println("      \"name\": \"A\",");
-        pw.println("      \"chords\": " +
-                Arrays.toString(a)
-                        .replace(" ", "")
-                        .replace("[", "[\"")
-                        .replace("]", "\"]")
-                        .replace(",", "\",\""));
-        pw.println("    },");
+    // A
+    pw.println("    {");
+    pw.println("      \"name\": \"A\",");
+    pw.println("      \"chords\": " +
+            Arrays.toString(a)
+                    .replace(" ", "")
+                    .replace("[", "[\"")
+                    .replace("]", "\"]")
+                    .replace(",", "\",\""));
+    pw.println("    },");
 
-        pw.println("    {");
-        pw.println("      \"name\": \"B\",");
-        pw.println("      \"chords\": " +
-                Arrays.toString(b)
-                        .replace(" ", "")
-                        .replace("[", "[\"")
-                        .replace("]", "\"]")
-                        .replace(",", "\",\""));
-        pw.println("    }");
+    // B
+    pw.println("    {");
+    pw.println("      \"name\": \"B\",");
+    pw.println("      \"chords\": " +
+            Arrays.toString(b)
+                    .replace(" ", "")
+                    .replace("[", "[\"")
+                    .replace("]", "\"]")
+                    .replace(",", "\",\""));
+    pw.println("    },");
 
-        pw.println("  ]");
-        pw.println("}");
+    // C
+    pw.println("    {");
+    pw.println("      \"name\": \"C\",");
+    pw.println("      \"chords\": " +
+            Arrays.toString(c)
+                    .replace(" ", "")
+                    .replace("[", "[\"")
+                    .replace("]", "\"]")
+                    .replace(",", "\",\""));
+    pw.println("    },");
 
-        pw.close();
-    }
+    // D
+    pw.println("    {");
+    pw.println("      \"name\": \"D\",");
+    pw.println("      \"chords\": " +
+            Arrays.toString(d)
+                    .replace(" ", "")
+                    .replace("[", "[\"")
+                    .replace("]", "\"]")
+                    .replace(",", "\",\""));
+    pw.println("    },");
+
+    // E
+    pw.println("    {");
+    pw.println("      \"name\": \"E\",");
+    pw.println("      \"chords\": " +
+            Arrays.toString(e)
+                    .replace(" ", "")
+                    .replace("[", "[\"")
+                    .replace("]", "\"]")
+                    .replace(",", "\",\""));
+    pw.println("    }");
+
+    pw.println("  ]");
+    pw.println("}");
+
+    pw.close();
+}
 
     static String extract(
             String json,
