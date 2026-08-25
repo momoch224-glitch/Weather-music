@@ -7,9 +7,18 @@
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css">
+  
+  <!-- 👇 ここから追加：MIDI再生用のライブラリを読み込む（</head>の直前） 👇 -->
+  <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+  <!-- 👆 ここまで 👆 -->
 </head>
 <!-- 🌟 id="app-body" とアニメーション(transition)を追加 -->
 <body id="app-body" class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4 font-sans text-gray-800 transition-colors duration-1000 relative">
+
+  <!-- 👇 ここから追加：透明なMIDIプレイヤーを隠して配置（<body>の直下） 👇 -->
+  <!-- ※ srcには、後でPythonから受け取るMIDIファイルのURLをセットしますが、今はダミーを置いておきます -->
+  <midi-player id="hidden-player" src="final_arranged.mid" style="display: none;"></midi-player>
+  <!-- 👆 ここまで 👆 -->
 
   <!-- 🌟 ③ ロード画面（初期状態は hidden で非表示） -->
   <div id="loading-overlay" class="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 hidden flex-col items-center justify-center rounded-3xl">
@@ -25,7 +34,7 @@
 
     <!-- 🌟 ① 地図の高さを h-48 に拡大 -->
     <div id="map" class="h-48 w-full rounded-xl mb-6 shadow-inner z-0"></div>
-
+<!-- ...以下略... -->
     <div class="flex justify-center gap-6 mb-6">
       <div class="bg-indigo-50/80 rounded-2xl p-4 w-24 shadow-inner">
         <p class="text-xs text-indigo-400 font-semibold mb-1">TEMP</p>
@@ -47,26 +56,25 @@
       
       <div class="mb-4">
         <div class="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
-          <div class="h-full bg-indigo-500 w-1/3 rounded-full relative"></div>
+          <!-- 👇 ここを修正：id="progress-bar" を追加し、幅(style)を 0% にします 👇 -->
+          <div id="progress-bar" class="h-full bg-indigo-500 rounded-full relative transition-all duration-100" style="width: 0%;"></div>
         </div>
       </div>
 
-      <!-- 🌟 ② 再生ボタンとダウンロードボタンを追加 -->
+<!-- 🌟 ② 再生ボタンとダウンロードボタンを追加 -->
       <div class="flex justify-center items-center gap-8 mt-4">
-        <!-- ダウンロードボタン -->
-        <button class="text-indigo-300 hover:text-indigo-500 transition-colors flex flex-col items-center">
+        <!-- ダウンロードボタン (id="download-btn"を追加しました) -->
+        <button id="download-btn" class="text-indigo-300 hover:text-indigo-500 transition-colors flex flex-col items-center">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           <span class="text-[9px] font-bold mt-1">MIDI</span>
         </button>
-        <!-- 再生ボタン -->
-        <button class="w-14 h-14 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full flex justify-center items-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
+        <!-- 再生ボタン (id="play-btn"を追加しました) -->
+        <button id="play-btn" class="w-14 h-14 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full flex justify-center items-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
           <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
         <!-- 将来用の拡張スペース（ダミー） -->
         <div class="w-6 h-6"></div> 
       </div>
-    </div>
-
     <button id="getWeatherButton" class="w-full bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-100 font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center gap-2">
       <span class="text-xl">📍</span> 
       現在地から天気を取得

@@ -41,7 +41,6 @@ document.getElementById("getWeatherButton").onclick = function () {
     );
 };
 
-// 天気を取得する処理
 // 天気を取得して画面を更新する処理
 async function getWeather(lat, lon) {
     const loadingOverlay = document.getElementById("loading-overlay");
@@ -79,3 +78,71 @@ async function getWeather(lat, lon) {
         loadingOverlay.classList.remove("flex");
     }
 }
+
+// ==========================================
+// ボタンとプログレスバーの連動処理
+// ==========================================
+
+const player = document.getElementById("hidden-player");
+const playBtn = document.getElementById("play-btn");
+const progressBar = document.getElementById("progress-bar"); // バーの要素を取得
+
+const playIcon = `<svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+const stopIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>`;
+
+let progressInterval; // タイマー用の変数
+
+// プログレスバーを更新する関数
+function updateProgress() {
+    // Magentaのプレイヤーから総再生時間と現在の再生時間を取得
+    const totalTime = player.duration;
+    const currentTime = player.currentTime;
+
+    if (totalTime > 0) {
+        // パーセンテージを計算（最大100%）
+        const percentage = (currentTime / totalTime) * 100;
+        // バーの幅(width)を更新
+        progressBar.style.width = percentage + "%";
+    }
+
+    // 最後まで再生し終わったら停止状態に戻す
+    if (currentTime >= totalTime && totalTime > 0) {
+        clearInterval(progressInterval);
+        playBtn.innerHTML = playIcon;
+        progressBar.style.width = "100%"; // 念のため100%で止める
+    }
+}
+
+// 再生ボタンを押した時の処理
+playBtn.onclick = function () {
+    if (player.playing) {
+        // 再生中なら停止
+        player.stop();
+        playBtn.innerHTML = playIcon;
+        // タイマーを止める
+        clearInterval(progressInterval);
+    } else {
+        // 停止中なら再生
+        player.start();
+        playBtn.innerHTML = stopIcon;
+        // 100ミリ秒（0.1秒）ごとにバーを更新するタイマーを開始
+        progressInterval = setInterval(updateProgress, 100);
+    }
+};
+
+// ダウンロードボタンを押した時の処理
+document.getElementById("download-btn").onclick = function () {
+    const midiUrl = player.src;
+    
+    if (!midiUrl) {
+        alert("まだ音楽が生成されていません！");
+        return;
+    }
+
+    const a = document.createElement("a");
+    a.href = midiUrl;
+    a.download = "weather_music.mid";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
