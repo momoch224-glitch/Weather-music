@@ -493,6 +493,12 @@ public class Main {
                 System.out.println(
                 "season debug = [" + season + "]"
                 );
+            
+                // ====================================
+                // BPM計算
+                // ====================================
+                int bpm = calculateBPM();
+            
 
                 writeJson(
                 season,
@@ -1232,7 +1238,8 @@ static void writeJson(
     String[] b,
     String[] c,
     String[] d,
-    String[] e
+    String[] e,
+    int bpm
 )throws Exception {
 
     PrintWriter pw =
@@ -1243,7 +1250,7 @@ static void writeJson(
             );
 
         pw.println("{");
-        pw.println("  \"bpm\": 90,");
+        pw.println("  \"bpm\": " + bpm + ",");
         pw.println("  \"season\": \"" + season + "\",");
         pw.println("  \"key1\": \"" + key1 + "\",");
         pw.println("  \"key2\": \"" + key2 + "\",");
@@ -1354,4 +1361,84 @@ static void writeJson(
                 : s.replace("\"", "")
                 .trim();
     }
+
+    // ====================================
+    // BPM計算メソッド
+    // ====================================
+    static int calculateBPM() {
+        
+        try {
+            String csvPath = "JavaPython/wind_notes.csv";
+            
+            // CSVファイルを読み込む
+            BufferedReader reader = 
+                    new BufferedReader(
+                            new FileReader(csvPath)
+                    );
+            
+            String line;
+            double humiditySum = 0;
+            double changeRateSum = 0;
+            int count = 0;
+            
+            // ヘッダー行をスキップ
+            reader.readLine();
+            
+            // データ行を読み込む
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                
+                // humidity は5番目のカラム (index 4)
+                // change_rate は8番目のカラム (index 8)
+                if (parts.length > 8) {
+                    try {
+                        double humidity = Double.parseDouble(parts[4]);
+                        double changeRate = Double.parseDouble(parts[8]);
+                        
+                        humiditySum += humidity;
+                        changeRateSum += changeRate;
+                        count++;
+                    } catch (NumberFormatException e) {
+                        // 数値変換失敗時はスキップ
+                    }
+                }
+            }
+            
+            reader.close();
+            
+            if (count == 0) {
+                System.out.println("警告: wind_notes.csv に有効なデータがありません");
+                return 90; // デフォルト値
+            }
+            
+            // 平均値を計算
+            double humidityAvg = humiditySum / count;
+            double changeRateAvg = changeRateSum / count;
+            
+            System.out.println("[BPM計算]");
+            System.out.println("  平均湿度: " + String.format("%.2f", humidityAvg) + "%");
+            System.out.println("  平均風速変化量: " + String.format("%.2f", changeRateAvg));
+            
+            // BPM計算式
+            // BPM = 120 - (humidity / 100) * 30 + (changeRate / 10) * 20
+            double bpmDouble = 120 
+                    - (humidityAvg / 100.0) * 30 
+                    + (changeRateAvg / 10.0) * 20;
+            
+            int bpm = (int) Math.round(bpmDouble);
+            
+            // 範囲制限 (80-140)
+            bpm = Math.max(80, Math.min(140, bpm));
+            
+            System.out.println("  計算BPM: " + bpm);
+            
+            return bpm;
+            
+        } catch (Exception e) {
+            System.out.println("BPM計算エラー: " + e.getMessage());
+            e.printStackTrace();
+            return 90; // デフォルト値
+        }
+    }
 }
+ 
