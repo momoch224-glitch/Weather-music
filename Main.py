@@ -2805,7 +2805,7 @@ if __name__ == "__main__":
 
 
     add_arrangement(
-        "Final.mid"
+            "../weather_music_ui/final_arranged.mid"
     )
 
 
