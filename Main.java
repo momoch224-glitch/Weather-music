@@ -508,7 +508,8 @@ public class Main {
                 chordsB,
                 chordsC,
                 chordsD,
-                chordsE
+                chordsE,
+                bpm    
                 );
 
             System.out.println(
@@ -1427,8 +1428,8 @@ static void writeJson(
             
             int bpm = (int) Math.round(bpmDouble);
             
-            // 範囲制限 (80-140)
-            bpm = Math.max(80, Math.min(140, bpm));
+            // 範囲制限 (60-140)
+            bpm = Math.max(60, Math.min(140, bpm));
             
             System.out.println("  計算BPM: " + bpm);
             
