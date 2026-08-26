@@ -34,6 +34,29 @@
 
     <!-- 🌟 ① 地図の高さを h-48 に拡大 -->
     <div id="map" class="h-48 w-full rounded-xl mb-6 shadow-inner z-0"></div>
+
+    <!-- 例: ボタン押下で /generate にリクエスト -->
+    <script>
+    async function generateForLocation() {
+      const location = document.getElementById('locationInput').value;
+      const resp = await fetch('/generate', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ location })
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        alert('生成完了: ' + JSON.stringify(data));
+      } else {
+        alert('失敗: ' + (data.message || 'エラー'));
+      }
+    }
+    </script>
+    
+    <!-- HTML 側に input とボタン -->
+    <input id="locationInput" placeholder="場所を入力" />
+    <button onclick="generateForLocation()">生成</button>
+    
 <!-- ...以下略... -->
     <div class="flex justify-center gap-6 mb-6">
       <div class="bg-indigo-50/80 rounded-2xl p-4 w-24 shadow-inner">
