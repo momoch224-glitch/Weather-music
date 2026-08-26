@@ -18,7 +18,9 @@ print("最新版Main.py起動")
 # 設定
 # ==========================================================
 
-CHECKPOINT = "C:/AI/models/cat-mel_2bar_big.ckpt"
+import os
+# 既存の CHECKPOINT = "C:/AI/models/cat-mel_2bar_big.ckpt" を下の行に置換
+CHECKPOINT = os.environ.get("CHECKPOINT_PATH", "/app/models/cat-mel_2bar_big.ckpt")
 
 BPM = 90
 
