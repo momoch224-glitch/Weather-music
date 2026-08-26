@@ -12,4 +12,4 @@ RUN pip install tensorflow==2.9.1 magenta==2.1.4
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python", "Main.py"]
