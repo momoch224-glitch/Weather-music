@@ -41,6 +41,44 @@ document.getElementById("getWeatherButton").onclick = function () {
     );
 };
 
+// 追加: 手入力で場所を送る処理（index.html の input id="manualLocation", button id="manualSendBtn" に対応）
+document.getElementById("manualSendBtn").onclick = function () {
+    const city = document.getElementById("manualLocation").value.trim();
+    if (!city) {
+        alert("場所を入力してください（例: Tokyo）");
+        return;
+    }
+    (async () => {
+        try {
+            // ロード画面を表示
+            document.getElementById("loading-overlay").classList.remove("hidden");
+            document.getElementById("loading-overlay").classList.add("flex");
+
+            // /generate に POST (JSON のキー名は "location" に合わせる)
+            const resp = await fetch("/generate", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ location: city })
+            });
+
+            const result = await resp.json();
+            if (!resp.ok) {
+                alert("生成に失敗しました: " + (result.message || JSON.stringify(result)));
+            } else {
+                // 生成成功したらブラウザのMIDIソースを更新（final_arranged.mid を返す前提）
+                document.getElementById("hidden-player").src = "final_arranged.mid?t=" + new Date().getTime();
+                document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
+            }
+        } catch (e) {
+            console.error(e);
+            alert("通信エラーが発生しました");
+        } finally {
+            document.getElementById("loading-overlay").classList.add("hidden");
+            document.getElementById("loading-overlay").classList.remove("flex");
+        }
+    })();
+};
+
 // 天気を取得して画面を更新する処理
 async function getWeather(lat, lon) {
     const loadingOverlay = document.getElementById("loading-overlay");
