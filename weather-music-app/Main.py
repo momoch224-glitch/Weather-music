@@ -1202,6 +1202,42 @@ def analyze_midi(midi_file):
         midi_file
     )
 
+    trim_leading_silence(seq)
+
+
+    note_starts = [
+    note.start_time
+    for note in seq.notes
+    if not note.is_drum
+]
+
+    if note_starts:
+
+        first_note = min(
+            note.start_time
+            for note in seq.notes
+            if not note.is_drum
+        )
+
+        print(
+            "先頭ノート位置:",
+            first_note
+        )
+
+        print(
+            "先頭ノート:",
+            min(note_starts)
+        )
+
+        print(
+            "最終ノート:",
+            max(
+                note.end_time
+                for note in seq.notes
+                if not note.is_drum
+            )
+        )
+
     pitches = [
         note.pitch
         for note in seq.notes
@@ -1861,17 +1897,65 @@ def create_best_midis():
         b_best
     )
 
+def create_best_midi(original_midi):
+
+    candidate_dir = (
+        original_midi.replace(
+            ".mid",
+            ""
+        )
+        + "_candidates"
+    )
+
+    shutil.rmtree(
+        candidate_dir,
+        ignore_errors=True
+    )
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "magenta.models.music_vae.music_vae_generate",
+
+        "--config=cat-mel_2bar_big",
+
+        "--checkpoint_file="
+        + CHECKPOINT,
+
+        "--input_midi_1="
+        + original_midi,
+
+        "--num_outputs=5",
+
+        "--output_dir="
+        + candidate_dir
+    ]
+
+    result = subprocess.run(cmd)
+
+    if result.returncode != 0:
+
+        raise RuntimeError(
+            original_midi
+            + " の候補生成失敗"
+        )
+
+    return select_best_from_midi(
+        original_midi,
+        candidate_dir
+    )
 
 # ==========================================================
 # コード進行提示用MIDI
 # ==========================================================
 
 def create_chord_reference_midi(
+    name,
     chords
 ):
 
     pattern = {
-        "name": "A_CODE",
+        "name": name,
         "chords": chords
     }
 
@@ -1880,7 +1964,7 @@ def create_chord_reference_midi(
         BPM
     )
 
-    return "A_CODE.mid"
+    return name + ".mid"
 # ==========================================================
 # MusicVAE補間
 # ==========================================================
@@ -1974,7 +2058,95 @@ def interpolate(
         )
     )
 
+    for midi_file in selected:
+
+        fix_interpolation_midi(
+            midi_file
+        )
+
     return selected
+
+def trim_leading_silence(seq):
+
+    starts = [
+        n.start_time
+        for n in seq.notes
+        if not n.is_drum
+    ]
+
+    if not starts:
+        return
+
+    offset = min(starts)
+
+    for note in seq.notes:
+
+        note.start_time -= offset
+        note.end_time -= offset
+
+    seq.total_time -= offset
+
+    print(
+    f"先頭無音除去: {offset:.3f}拍"
+    )
+
+def force_length_to_measure(seq):
+
+    melody_notes = [
+        n
+        for n in seq.notes
+        if not n.is_drum
+    ]
+
+    if not melody_notes:
+        return
+
+    current_length = seq.total_time
+
+    # 4拍単位に切り上げ
+    target_length = (
+        math.ceil(current_length / 4.0)
+        * 4.0
+    )
+
+    last_note = max(
+        melody_notes,
+        key=lambda n: n.end_time
+    )
+
+    print(
+        f"長さ補正: "
+        f"{current_length:.3f}"
+        f" → "
+        f"{target_length:.3f}"
+    )
+
+    actual_end = max(
+        n.end_time
+        for n in melody_notes
+    )
+
+    target_length = (
+        round(actual_end / 4.0)
+        * 4.0
+    )
+
+    seq.total_time = target_length  
+
+def fix_interpolation_midi(midi_file):
+
+    seq = midi_io.midi_file_to_note_sequence(
+        midi_file
+    )
+
+    trim_leading_silence(seq)
+
+    force_length_to_measure(seq)
+
+    note_seq.sequence_proto_to_midi_file(
+        seq,
+        midi_file
+    )   
 
 
 # ==========================================================
@@ -2078,13 +2250,34 @@ def append_sequence(
 # MIDI連結
 # ==========================================================
 
-def merge_all(
-    a_best,
-    a_code,
-    b_best,
-    selected_a_code,
-    selected_code_b
-):
+def merge_all():
+
+    global a_best
+    global b_best
+    global c_best
+    global d_best
+    global e_best
+
+    global a_code
+    global b_code
+    global c_code
+    global d_code
+    global e_code
+
+    global selected_a_code
+    global selected_code_b
+
+    global selected_b_code
+    global selected_code_c
+
+    global selected_c_code
+    global selected_code_d
+
+    global selected_d_code
+    global selected_code_e
+
+    global selected_e_code
+
     print()
     print("==========================================")
     print("MIDI連結開始")
@@ -2105,47 +2298,47 @@ def merge_all(
     # ======================================================
     structure = []
 
-    structure.append(
-        ("A_best", a_best)
-    )
+    structure = [
 
-    for i, midi_file in enumerate(
-        selected_a_code,
-        start=1
-    ):
-        structure.append(
-            (
-                f"A_CODE_INTERP_{i}",
-                midi_file
-            )
-        )
+    ("A_best", a_best),
 
-    structure.append(
-        (
-            "A_CODE",
-            a_code
-        )
-    )
+    ("A_CODE_INTERP", selected_a_code[0]),
 
-    for i, midi_file in enumerate(
-        selected_code_b,
-        start=1
-    ):
-        structure.append(
-            (
-                f"CODE_B_INTERP_{i}",
-                midi_file
-            )
-        )
+    ("A_CODE", a_code),
 
-    structure.append(
-        (
-            "B_best",
-            b_best
-        )
-    )
+    ("CODE_B_INTERP", selected_code_b[0]),
 
+    ("B_best", b_best),
 
+    ("B_CODE_INTERP", selected_b_code[0]),
+
+    ("B_CODE", b_code),
+
+    ("CODE_C_INTERP", selected_code_c[0]),
+
+    ("C_best", c_best),
+
+    ("C_CODE_INTERP", selected_c_code[0]),
+
+    ("C_CODE", c_code),
+
+    ("CODE_D_INTERP", selected_code_d[0]),
+
+    ("D_best", d_best),
+
+    ("D_CODE_INTERP", selected_d_code[0]),
+
+    ("D_CODE", d_code),
+
+    ("CODE_E_INTERP", selected_code_e[0]),
+
+    ("E_best", e_best),
+
+    ("E_CODE_INTERP", selected_e_code[0]),
+
+    ("E_CODE", e_code)
+
+]
 
     print()
     print("最終連結順:")
@@ -2191,6 +2384,45 @@ def merge_all(
                 midi_file
             )
         )
+
+        melody_notes = [
+            n
+            for n in seq.notes
+            if not n.is_drum
+        ]
+
+        if melody_notes:
+
+            print(
+                "LAST_END:",
+                max(
+                    n.end_time
+                    for n in melody_notes
+                )
+            )
+
+
+
+        starts = [
+            note.start_time
+            for note in seq.notes
+            if not note.is_drum
+        ]
+
+        if starts:
+
+            print(
+                "FIRST_NOTE:",
+                min(starts)
+            )
+
+        if abs(seq.total_time % 4) > 0.01:
+
+            print(
+                "WARNING:",
+                midi_file,
+                seq.total_time
+            )
 
         print(
             "Length:",
@@ -2730,6 +2962,18 @@ if __name__ == "__main__":
 
     a_best, b_best = create_best_midis()
 
+    c_best = create_best_midi(
+        "C.mid"
+    )
+
+    d_best = create_best_midi(
+        "D.mid"
+    )
+
+    e_best = create_best_midi(
+        "E.mid"
+    )
+
     patterns = load_pattern_chords()
 
     key1, key2 = load_keys()
@@ -2745,21 +2989,102 @@ if __name__ == "__main__":
         a_best,
         key1
     )
+    fix_midi_file(a_best)
 
     a_code = create_chord_reference_midi(
-        patterns["A"]
+    "A_CODE",
+    patterns["A"]
     )
+
+    b_code = create_chord_reference_midi(
+        "B_CODE",
+        patterns["B"]
+    )
+
+    c_code = create_chord_reference_midi(
+        "C_CODE",
+        patterns["C"]
+    )
+
+    d_code = create_chord_reference_midi(
+        "D_CODE",
+        patterns["D"]
+    )
+
+    e_code = create_chord_reference_midi(
+        "E_CODE",
+        patterns["E"]
+    )
+
+    force_scale(
+        a_code,
+        key1
+    )
+
+    force_scale(
+        b_code,
+        key1
+    )
+
+    force_scale(
+        c_code,
+        key1
+    )
+
+    force_scale(
+        d_code,
+        key2
+    )
+
+    force_scale(
+        e_code,
+        key2
+    )
+    fix_midi_file(b_best)
+    fix_midi_file(c_best)
+    fix_midi_file(d_best)
+    fix_midi_file(e_best)
+
 
     b_best = reharmonize_phrase_end(
         b_best,
         patterns["B"]
     )
 
+
+    c_best = reharmonize_phrase_end(
+        c_best,
+        patterns["C"]
+    )
+
+    d_best = reharmonize_phrase_end(
+        d_best,
+        patterns["D"]
+    )
+
+    e_best = reharmonize_phrase_end(
+        e_best,
+        patterns["E"]
+    )
     force_scale(
         b_best,
         key1
+    )    
+
+    force_scale(
+        c_best,
+        key1
     )
 
+    force_scale(
+        d_best,
+        key2
+    )
+
+    force_scale(
+        e_best,
+        key2
+    )
 
 
     selected_a_code = interpolate(
@@ -2780,6 +3105,49 @@ if __name__ == "__main__":
         "code_b_interp"
     )
 
+
+    selected_b_code = interpolate(
+    b_best,
+    b_code,
+    "b_code_interp"
+    )
+
+    selected_code_c = interpolate(
+        b_code,
+        c_best,
+        "code_c_interp"
+    )
+
+    selected_c_code = interpolate(
+        c_best,
+        c_code,
+        "c_code_interp"
+    )
+
+    selected_code_d = interpolate(
+        c_code,
+        d_best,
+        "code_d_interp"
+    )
+
+    selected_d_code = interpolate(
+        d_best,
+        d_code,
+        "d_code_interp"
+    )
+
+    selected_code_e = interpolate(
+        d_code,
+        e_best,
+        "code_e_interp"
+    )
+
+    selected_e_code = interpolate(
+        e_best,
+        e_code,
+        "e_code_interp"
+    )
+
     for midi_file in selected_code_b:
 
         force_scale(
@@ -2787,16 +3155,57 @@ if __name__ == "__main__":
             key1
         )
 
+    # ------------------------------
+    # key1側
+    # ------------------------------
+
+    for group in [
+
+        selected_b_code,
+
+        selected_code_c,
+
+        selected_c_code
+
+    ]:
+
+        for midi_file in group:
+
+            force_scale(
+                midi_file,
+                key1
+            )
+
+    # ------------------------------
+    # key2側
+    # ------------------------------
+
+    for group in [
+
+        selected_code_d,
+
+        selected_d_code,
+
+        selected_code_e,
+
+        selected_e_code
+
+    ]:
+
+        for midi_file in group:
+
+            force_scale(
+                midi_file,
+                key2
+            )
+
+
+
+
     # ------------------------------------------------------
-    # 3. A_best → 補間 → B_best を連結
+    # 3. A_best → 補間 → B_best... を連結
     # ------------------------------------------------------
-    merge_all(
-        a_best,
-        a_code,
-        b_best,
-        selected_a_code,
-        selected_code_b
-    )
+    merge_all()
 
     # ------------------------------------------------------
     # 4. 完成した曲を自動編曲
@@ -2805,7 +3214,7 @@ if __name__ == "__main__":
 
 
     add_arrangement(
-            "../weather_music_ui/final_arranged.mid"
+        "Final.mid"
     )
 
 
