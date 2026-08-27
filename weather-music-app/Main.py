@@ -1248,9 +1248,17 @@ def analyze_midi(midi_file):
     if not pitches:
 
         raise RuntimeError(
-            "MIDIに音符がありません: "
+            "警告: AIが無音のMIDIを生成しました。スキップします: "
             + midi_file
         )
+        
+        return {
+            "file": midi_file,
+            "min": 9999,
+            "max": -9999,
+            "average": 9999,
+            "range": 9999
+        }
 
     min_pitch = min(pitches)
     max_pitch = max(pitches)
