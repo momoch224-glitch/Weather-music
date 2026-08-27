@@ -197,8 +197,8 @@ public class Main {
                 chordsC,
                 chordsD,
                 chordsE,
-                bpm
-            );
+                bpm    
+                );
 
             System.out.println("chords.json 作成完了");
 
@@ -544,8 +544,10 @@ public class Main {
 
             double bpmDouble = 120 - (humidityAvg / 100.0) * 30 + (changeRateAvg / 10.0) * 20;
             int bpm = (int) Math.round(bpmDouble);
-            bpm = Math.max(80, Math.min(140, bpm));
-
+            
+            // 範囲制限 (60-140)
+            bpm = Math.max(60, Math.min(140, bpm));
+            
             System.out.println("  計算BPM: " + bpm);
             return bpm;
 
