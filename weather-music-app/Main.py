@@ -21,8 +21,8 @@ print("最新版Main.py起動")
 # 編集後（推奨） — Main.py の先頭付近に追加または置換
 import os
 CHECKPOINT = os.environ.get("CHECKPOINT_PATH", "/app/models/cat-mel_2bar_big.tar")
-BPM = 90
 
+BPM = None
 
 # ==========================================================
 # リズム設定
@@ -1313,6 +1313,18 @@ def load_keys():
         data["key2"]
     )
 
+def load_bpm():
+
+    with open(
+        "chords.json",
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        data = json.load(f)
+
+    return data["bpm"]    
+
 def load_season():
 
     with open(
@@ -2102,11 +2114,13 @@ def force_length_to_measure(seq):
     if not melody_notes:
         return
 
-    current_length = seq.total_time
+    actual_end = max(
+        n.end_time
+        for n in melody_notes
+    )
 
-    # 4拍単位に切り上げ
     target_length = (
-        math.ceil(current_length / 4.0)
+        math.ceil(actual_end / 4.0)
         * 4.0
     )
 
@@ -2117,22 +2131,15 @@ def force_length_to_measure(seq):
 
     print(
         f"長さ補正: "
-        f"{current_length:.3f}"
+        f"{actual_end:.3f}"
         f" → "
         f"{target_length:.3f}"
     )
 
-    actual_end = max(
-        n.end_time
-        for n in melody_notes
-    )
+    last_note.end_time = target_length
 
-    target_length = (
-        round(actual_end / 4.0)
-        * 4.0
-    )
+    seq.total_time = target_length
 
-    seq.total_time = target_length  
 
 def fix_interpolation_midi(midi_file):
 
@@ -2149,6 +2156,20 @@ def fix_interpolation_midi(midi_file):
         midi_file
     )   
 
+def fix_midi_file(midi_file):
+
+    seq = midi_io.midi_file_to_note_sequence(
+        midi_file
+    )
+
+    trim_leading_silence(seq)
+
+    force_length_to_measure(seq)
+
+    note_seq.sequence_proto_to_midi_file(
+        seq,
+        midi_file
+    )
 
 # ==========================================================
 # MIDI連結
@@ -2425,6 +2446,21 @@ def merge_all():
                 seq.total_time
             )
 
+        actual_end = max(
+            n.end_time
+            for n in seq.notes
+            if not n.is_drum
+        )
+
+        print(
+            "TOTAL_TIME:",
+            seq.total_time
+        )
+
+        print(
+            "ACTUAL_END:",
+            actual_end
+        )
         print(
             "Length:",
             seq.total_time
@@ -2519,6 +2555,17 @@ def merge_all():
         )
     )
 
+    final_starts = [
+        n.start_time
+        for n in final_seq.notes
+        if not n.is_drum
+    ]
+
+    print(
+        "FINAL_FIRST_NOTE:",
+        min(final_starts)
+    )
+
     final_pitches = [
 
         note.pitch
@@ -2563,6 +2610,29 @@ def merge_all():
             - min(final_pitches),
             "半音"
         )
+
+        final_seq = midi_io.midi_file_to_note_sequence(
+            "Final.mid"
+        )
+
+        all_notes = sorted(
+            [
+                n
+                for n in final_seq.notes
+                if not n.is_drum
+            ],
+            key=lambda n: n.start_time
+        )
+
+        print()
+        print("===== FINAL FIRST 20 NOTES =====")
+
+        for n in all_notes[:20]:
+            print(
+                n.start_time,
+                n.end_time,
+                n.pitch
+            )
 
     return "Final.mid"
 
@@ -2778,10 +2848,7 @@ def add_arrangement(
 
     for note in seq.notes:
 
-        # ドラムなどを除外
-        if note.is_drum:
 
-            continue
 
         original_notes.append(
             note
@@ -2918,6 +2985,13 @@ if __name__ == "__main__":
 
     print("処理開始")
 
+    BPM = load_bpm()
+
+    print(
+        "使用BPM:",
+        BPM
+    )
+
     season = load_season()
 
     print(
@@ -2990,32 +3064,37 @@ if __name__ == "__main__":
         a_best,
         key1
     )
-    fix_midi_file(a_best)
+
 
     a_code = create_chord_reference_midi(
     "A_CODE",
     patterns["A"]
     )
+    fix_midi_file(a_code)
 
     b_code = create_chord_reference_midi(
         "B_CODE",
         patterns["B"]
     )
+    fix_midi_file(b_code)
 
     c_code = create_chord_reference_midi(
         "C_CODE",
         patterns["C"]
     )
+    fix_midi_file(c_code)
 
     d_code = create_chord_reference_midi(
         "D_CODE",
         patterns["D"]
     )
+    fix_midi_file(d_code)
 
     e_code = create_chord_reference_midi(
         "E_CODE",
         patterns["E"]
     )
+    fix_midi_file(e_code)
 
     force_scale(
         a_code,
@@ -3041,10 +3120,7 @@ if __name__ == "__main__":
         e_code,
         key2
     )
-    fix_midi_file(b_best)
-    fix_midi_file(c_best)
-    fix_midi_file(d_best)
-    fix_midi_file(e_best)
+
 
 
     b_best = reharmonize_phrase_end(
@@ -3086,6 +3162,18 @@ if __name__ == "__main__":
         e_best,
         key2
     )
+
+    fix_midi_file(a_best)
+    fix_midi_file(b_best)
+    fix_midi_file(c_best)
+    fix_midi_file(d_best)
+    fix_midi_file(e_best)
+
+    fix_midi_file(a_code)
+    fix_midi_file(b_code)
+    fix_midi_file(c_code)
+    fix_midi_file(d_code)
+    fix_midi_file(e_code)
 
 
     selected_a_code = interpolate(
