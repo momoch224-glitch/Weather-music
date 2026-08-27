@@ -10,8 +10,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 
-@RestController
-@CrossOrigin(origins = "*")
+//@RestController
+//@CrossOrigin(origins = "*")
 public class MusicController {
 
     @PostMapping("/generate")
