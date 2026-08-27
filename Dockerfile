@@ -13,10 +13,15 @@ WORKDIR /app
 RUN pip install --upgrade pip
 RUN pip install tensorflow==2.9.1 magenta==2.1.4
 
+# プロジェクト全体のファイルをコピー
 COPY . .
 
-# ★ここを追加：実際のプログラムが入っているフォルダに移動する
+# ★ここを追加：modelsフォルダをDockerの中にコピーする！
+COPY models /app/models
+
+# JavaPythonフォルダを適切な場所に配置
+RUN cp -r /app/JavaPython /app/weather-music-app/
+
 WORKDIR /app/weather-music-app
 
-# 最後に司令塔であるJava(Spring Boot)を起動
 CMD ["./mvnw", "spring-boot:run"]
