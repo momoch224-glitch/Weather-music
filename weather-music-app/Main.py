@@ -20,8 +20,7 @@ print("最新版Main.py起動")
 
 # 編集後（推奨） — Main.py の先頭付近に追加または置換
 import os
-CHECKPOINT = os.environ.get("CHECKPOINT_PATH", "/app/models/cat-mel_2bar_big.ckpt")
-
+CHECKPOINT = os.environ.get("CHECKPOINT_PATH", "/app/models/cat-mel_2bar_big.tar")
 BPM = 90
 
 
