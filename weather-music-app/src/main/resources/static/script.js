@@ -1,6 +1,5 @@
 // script.js
 
-// 🌟修正ポイント1：要素の準備（playerなど）を一番上に移動して、いつでも使えるようにしました！
 const player = document.getElementById("hidden-player");
 const playBtn = document.getElementById("play-btn");
 const progressBar = document.getElementById("progress-bar"); 
@@ -48,8 +47,6 @@ document.getElementById("getWeatherButton").onclick = function () {
     );
 };
 
-// 🌟修正ポイント2：手動入力ボタン（亡霊）の処理をまるごと削除しました！
-
 // 天気を取得して画面を更新する処理
 async function getWeather(lat, lon) {
     const loadingOverlay = document.getElementById("loading-overlay");
@@ -59,8 +56,8 @@ async function getWeather(lat, lon) {
         loadingOverlay.classList.add("flex");
 
         // --- 1. 天気情報の取得 ---
-// 例
-const url = `http://localhost:8080/api/weather?lat=${lat}&lon=${lon}`;        const response = await fetch(url);        
+        const url = `/api/weather?lat=${lat}&lon=${lon}`;        
+        const response = await fetch(url);        
         if (!response.ok) throw new Error("API Error");
 
         const data = await response.json();
@@ -91,68 +88,66 @@ const url = `http://localhost:8080/api/weather?lat=${lat}&lon=${lon}`;        co
             }
         }, 30000);
 
-// --- 3. 音楽生成（Spring Boot APIとの通信） ---
-        try {
-            // ① まず「注文」をして、受付番号（taskId）をもらう
-            const apiResponse = await fetch("/generate", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ location: cityName })
-            });
+        // --- 3. 音楽生成（Spring Boot APIとの通信） ---
+        const apiResponse = await fetch("/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ location: cityName })
+        });
 
-            if (!apiResponse.ok) {
-                throw new Error("サーバーエラー");
-            }
-
-            const initData = await apiResponse.json();
-            const taskId = initData.taskId;
-            console.log("受付番号をもらいました:", taskId);
-
-            // ② 定期的に「できましたか？」と確認する（ポーリング処理）
-            const checkInterval = setInterval(async () => {
-                try {
-                    const statusRes = await fetch(`/api/status?taskId=${taskId}`);
-                    const statusData = await statusRes.json();
-                    console.log("現在の状況:", statusData.status);
-
-                    if (statusData.status === "COMPLETED") {
-                        // 完了した時の処理
-                        clearInterval(checkInterval); // 確認作業をストップ
-                        clearInterval(countdownTimer); // メッセージ切り替えもストップ
-                        
-                        // 音源をセット
-                        player.src = "final_arranged.mid?t=" + new Date().getTime();
-                        document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
-                        
-                        if (currentMarker) {
-                            currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${Math.round(data.main.temp)}℃`).openPopup();
-                        }
-
-                        // ローディング画面をここで非表示にする
-                        loadingOverlay.classList.add("hidden");
-                        loadingOverlay.classList.remove("flex");
-                        
-                    } else if (statusData.status === "ERROR") {
-                        // エラーが起きた時の処理
-                        clearInterval(checkInterval);
-                        clearInterval(countdownTimer);
-                        throw new Error("生成中にエラーが発生しました。");
-                    }
-                    // "PROCESSING"（処理中）の場合は何もしないで待つ（30秒後にまた確認）
-
-                } catch (err) {
-                    console.error("確認中にエラー:", err);
-                }
-            }, 30000); // 30000ミリ秒（30秒）ごとに実行
-
-        } catch (err) {
-            console.error("処理全体のエラー:", err);
-            document.getElementById("status-text").textContent = "処理に失敗しました";
-            loadingOverlay.classList.add("hidden");
-            loadingOverlay.classList.remove("flex");
+        if (!apiResponse.ok) {
+            throw new Error("サーバーエラー");
         }
+
+        const initData = await apiResponse.json();
+        const taskId = initData.taskId;
+        console.log("受付番号をもらいました:", taskId);
+
+        // ② 定期的に「できましたか？」と確認する（ポーリング処理）
+        const checkInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch(`/api/status?taskId=${taskId}`);
+                const statusData = await statusRes.json();
+                console.log("現在の状況:", statusData.status);
+
+                if (statusData.status === "COMPLETED") {
+                    clearInterval(checkInterval);
+                    clearInterval(countdownTimer);
+                    
+                    player.src = "final_arranged.mid?t=" + new Date().getTime();
+                    document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
+                    
+                    if (currentMarker) {
+                        currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${Math.round(data.main.temp)}℃`).openPopup();
+                    }
+
+                    loadingOverlay.classList.add("hidden");
+                    loadingOverlay.classList.remove("flex");
+                    
+                } else if (statusData.status === "ERROR") {
+                    clearInterval(checkInterval);
+                    clearInterval(countdownTimer);
+                    
+                    document.getElementById("status-text").textContent = "生成中にエラーが発生しました";
+                    loadingOverlay.classList.add("hidden");
+                    loadingOverlay.classList.remove("flex");
+                    throw new Error("生成中にエラーが発生しました。");
+                }
+            } catch (err) {
+                console.error("確認中にエラー:", err);
+            }
+        }, 30000);
+
+    } catch (err) {
+        console.error("処理全体のエラー:", err);
+        document.getElementById("status-text").textContent = "処理に失敗しました";
+        loadingOverlay.classList.add("hidden");
+        loadingOverlay.classList.remove("flex");
+    }
+} // ★抜け落ちていた「getWeather」関数を閉じるカッコを追加しました！
+
 // ==========================================
 // ボタンとプログレスバーの連動処理
 // ==========================================
