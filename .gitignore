@@ -7,7 +7,7 @@ weather-music-app/src/main/resources/static/config.js
 # 仮想環境を丸ごと除外
 venv38/
 .venv/
-
+models/*.tar
 # チェックポイントデータなどを除外
 *.ckpt*
 *.data-*

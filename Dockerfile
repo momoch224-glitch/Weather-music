@@ -1,11 +1,13 @@
 FROM python:3.8-slim
 
+# ★追加: モデルをダウンロードするために curl をインストール項目に追加
 RUN apt-get update && apt-get install -y \
     build-essential \
     ffmpeg \
     openjdk-17-jdk \
     libasound2-dev \
     libjack-jackd2-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -13,11 +15,11 @@ WORKDIR /app
 RUN pip install --upgrade pip
 RUN pip install tensorflow==2.9.1 magenta==2.1.4
 
-# プロジェクト全体のファイルをコピー
+# プロジェクト全体のファイルをコピー（.gitignoreで指定した.tarはここから省かれます）
 COPY . .
 
-# ★ここを追加：modelsフォルダをDockerの中にコピーする！
-COPY models /app/models
+# ★変更: GitHubからコピーできない重いAIモデルを、Dockerビルド時に公式から直接ダウンロードする
+RUN mkdir -p /app/models && curl -L -o /app/models/cat-mel_2bar_big.tar http://download.magenta.tensorflow.org/models/music_vae/cat-mel_2bar_big.tar
 
 # JavaPythonフォルダを適切な場所に配置
 RUN cp -r /app/JavaPython /app/weather-music-app/
