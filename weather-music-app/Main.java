@@ -37,6 +37,18 @@ public class Main {
                 json = json.replace(": ", ":");
                 System.out.println("DEBUG JSON = " + json);
             }
+            // 【追加】weather.py の完了待ちであることを明示
+            System.out.println("weather.py の実行完了を待機しています...");
+
+            process.waitFor();
+
+            // 【追加】weather.py の完了を明示
+            System.out.println("weather.py の実行が完了しました！");
+
+            if (json == null) {
+                System.out.println("weather.py から結果を取得できません");
+                return;
+            }
 
             process.waitFor();
 

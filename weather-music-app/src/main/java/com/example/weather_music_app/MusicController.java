@@ -10,7 +10,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 
-// ★ここの // を消して有効化します！
 //@RestController
 //@CrossOrigin(origins = "*")
 public class MusicController {

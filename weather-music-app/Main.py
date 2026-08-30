@@ -5,13 +5,25 @@ import subprocess
 import sys
 import math
 import random
-
+import os
 import note_seq
 from note_seq.protobuf import music_pb2
 from note_seq import midi_io
 
 
-print("最新版Main.py起動")
+print("最新版Main.py起動 - ライブラリ読み込み開始")
+
+import json
+import glob
+# ...中略...
+print("基本ライブラリ読み込み完了")
+
+import note_seq
+print("note_seq 読み込み完了")
+
+from note_seq.protobuf import music_pb2
+from note_seq import midi_io
+print("すべてのインポート完了、生成処理に入ります")
 
 
 # ==========================================================
@@ -1453,16 +1465,12 @@ def select_interpolation_candidates(
     )
 
     if not interpolation_files:
-
-        raise RuntimeError(
-            "補間MIDIが見つかりません: "
-            + interpolation_dir
-        )
+        print(f"警告: {interpolation_dir} で補間MIDIが生成されませんでした。安全網として元のMIDIを代用します。")
+        return [midi1]
 
     accepted_files = []
 
     for midi_file in interpolation_files:
-
         info = analyze_midi(
             midi_file
         )
@@ -2975,14 +2983,28 @@ def add_arrangement(
             tail_end
         )
 
-    note_seq.sequence_proto_to_midi_file(
-        seq,
-        "Final_arranged.mid"
-    )
+    # 変更箇所：Final_arranged.mid ではなく、Final.mid を上書き保存する
+# 変更箇所：Web側が読み込んでいるファイル名に完全に一致させる
+# 変更箇所：Web側が読み込んでいるファイル名に完全に一致させる
+    source_path = "/app/weather-music-app/src/main/resources/static/final_arranged.mid"
+    target_path = "/app/weather-music-app/target/classes/static/final_arranged.mid"
+    
+    note_seq.sequence_proto_to_midi_file(seq, source_path)
+    
+    import os
+    if os.path.exists(os.path.dirname(target_path)):
+        note_seq.sequence_proto_to_midi_file(seq, target_path)
+        print(f"{target_path} (配信フォルダ) 保存完了")
+    
+    print(f"{source_path} (ソースフォルダ) 保存完了")
+#    note_seq.sequence_proto_to_midi_file(
+#        seq,
+#        "Final_arranged.mid"
+#    )
 
-    print(
-        "Final_arranged.mid 作成完了"
-    )
+#    print(
+#        "Final_arranged.mid 作成完了"
+#    )
 
 
 # ==========================================================

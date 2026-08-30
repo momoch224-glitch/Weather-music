@@ -1,0 +1,31 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "WeatherMusicAppApplication",
+            "request": "launch",
+            "mainClass": "com.example.weather_music_app.WeatherMusicAppApplication",
+            "projectName": "weather-music-app"
+        },
+        {
+            "type": "java",
+            "name": "Launch Java Program",
+            "request": "launch",
+            "mainClass": "",
+            "env": {
+                "WEATHER_API_KEY": "7dd2bd170745a4b5c9bc70d4a6676883"
+            }
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "localhost に対して Edge を起動する",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}

@@ -1,4 +1,3 @@
-# weather.py
 import sys
 import requests
 import json
@@ -9,9 +8,7 @@ import pandas as pd
 sys.stdout.reconfigure(encoding='utf-8')
 
 def load_api_key():
-    # このファイル (weather.py) があるディレクトリのパスを取得
     current_dir = os.path.dirname(__file__)
-    # apikey.txt へのフルパスを作成
     key_path = os.path.join(current_dir, "apikey.txt")
     
     try:
@@ -48,7 +45,6 @@ def get_weather(city_name):
             "wind_speed": round(data["wind"]["speed"], 1)
         }
         
-        # wind_notes.csv から湿度と風速変化量を取得
         current_dir = os.path.dirname(__file__)
         csv_path = os.path.join(current_dir, "wind_notes.csv")
         

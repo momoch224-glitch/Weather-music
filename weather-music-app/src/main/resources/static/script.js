@@ -1,5 +1,4 @@
 // script.js
-const API_KEY = CONFIG.API_KEY;
 
 // 🌟修正ポイント1：要素の準備（playerなど）を一番上に移動して、いつでも使えるようにしました！
 const player = document.getElementById("hidden-player");
@@ -60,9 +59,8 @@ async function getWeather(lat, lon) {
         loadingOverlay.classList.add("flex");
 
         // --- 1. 天気情報の取得 ---
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
-        const response = await fetch(url);
-        
+// 例
+const url = `http://localhost:8080/api/weather?lat=${lat}&lon=${lon}`;        const response = await fetch(url);        
         if (!response.ok) throw new Error("API Error");
 
         const data = await response.json();
@@ -73,7 +71,7 @@ async function getWeather(lat, lon) {
 
         // --- 2. 待ち時間の表示設定 ---
         const loadingText = document.getElementById("loading-text");
-        loadingText.textContent = "音楽を生成中... (約3〜5分かかります☕)";
+        loadingText.textContent = "音楽を生成中... (約30〜50分かかります☕)";
 
         const messages = [
             "天気のデータを解析しています...",
@@ -93,48 +91,68 @@ async function getWeather(lat, lon) {
             }
         }, 30000);
 
-        // --- 3. 音楽生成（Spring Boot APIとの通信） ---
+// --- 3. 音楽生成（Spring Boot APIとの通信） ---
         try {
+            // ① まず「注文」をして、受付番号（taskId）をもらう
             const apiResponse = await fetch("/generate", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                // 🌟修正ポイント3：Javaが待っている {"location": "都市名"} の形に整えて送信！
                 body: JSON.stringify({ location: cityName })
             });
 
             if (!apiResponse.ok) {
-                const errorData = await apiResponse.json();
-                throw new Error("サーバーエラー: " + errorData.message);
+                throw new Error("サーバーエラー");
             }
 
-            const resultData = await apiResponse.json();
-            console.log("Spring Bootからの返答:", resultData);
+            const initData = await apiResponse.json();
+            const taskId = initData.taskId;
+            console.log("受付番号をもらいました:", taskId);
 
-            // プレイヤーの音源をセット（ブラウザのキャッシュ対策で末尾に時間を付ける）
-            player.src = "final_arranged.mid?t=" + new Date().getTime();
+            // ② 定期的に「できましたか？」と確認する（ポーリング処理）
+            const checkInterval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/status?taskId=${taskId}`);
+                    const statusData = await statusRes.json();
+                    console.log("現在の状況:", statusData.status);
 
-            document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
+                    if (statusData.status === "COMPLETED") {
+                        // 完了した時の処理
+                        clearInterval(checkInterval); // 確認作業をストップ
+                        clearInterval(countdownTimer); // メッセージ切り替えもストップ
+                        
+                        // 音源をセット
+                        player.src = "final_arranged.mid?t=" + new Date().getTime();
+                        document.getElementById("status-text").textContent = "音楽の生成が完了しました！";
+                        
+                        if (currentMarker) {
+                            currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${Math.round(data.main.temp)}℃`).openPopup();
+                        }
 
-            if (currentMarker) {
-                currentMarker.bindPopup(`<b>${cityName}</b><br>${data.weather[0].main} / ${Math.round(data.main.temp)}℃`).openPopup();
-            }
+                        // ローディング画面をここで非表示にする
+                        loadingOverlay.classList.add("hidden");
+                        loadingOverlay.classList.remove("flex");
+                        
+                    } else if (statusData.status === "ERROR") {
+                        // エラーが起きた時の処理
+                        clearInterval(checkInterval);
+                        clearInterval(countdownTimer);
+                        throw new Error("生成中にエラーが発生しました。");
+                    }
+                    // "PROCESSING"（処理中）の場合は何もしないで待つ（30秒後にまた確認）
 
-        } finally {
-            clearInterval(countdownTimer);
-            loadingText.textContent = "Generating Music...";
+                } catch (err) {
+                    console.error("確認中にエラー:", err);
+                }
+            }, 30000); // 30000ミリ秒（30秒）ごとに実行
+
+        } catch (err) {
+            console.error("処理全体のエラー:", err);
+            document.getElementById("status-text").textContent = "処理に失敗しました";
+            loadingOverlay.classList.add("hidden");
+            loadingOverlay.classList.remove("flex");
         }
-
-    } catch (err) {
-        console.error("処理全体のエラー:", err);
-        document.getElementById("status-text").textContent = "処理に失敗しました";
-    } finally {
-        loadingOverlay.classList.add("hidden");
-        loadingOverlay.classList.remove("flex");
-    }
-}
-
 // ==========================================
 // ボタンとプログレスバーの連動処理
 // ==========================================
