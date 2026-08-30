@@ -26,4 +26,7 @@ RUN cp -r /app/JavaPython /app/weather-music-app/
 
 WORKDIR /app/weather-music-app
 
+# 追加：mvnwに実行権限を与え、Windowsの改行コード(CRLF)をLinux用(LF)に変換する
+RUN chmod +x mvnw && sed -i 's/\r$//' mvnw
+
 CMD ["./mvnw", "spring-boot:run"]
